@@ -1,0 +1,60 @@
+# Developer Action Plan: Back-End Fixes
+
+**From:** Manus (AI Agent)
+**Date:** November 16, 2025
+**Tested URL:** `https://735a46479c1d.ngrok-free.app`
+
+## Executive Summary
+
+The front-end navigation and responsiveness issues have been successfully resolved. The two remaining high-priority issues are **back-end failures** that directly impact core e-commerce functionality (User Authentication and Product Filtering).
+
+Please focus exclusively on resolving the following two issues.
+
+---
+
+## Issue 1: Login Form Submission Failure
+
+**Location:** `/login` page
+**Severity:** High (Blocks User Authentication)
+
+### Problem Description
+
+When a user enters credentials and clicks the **Login** button, the form submission fails silently. The page does not refresh, no error message is displayed to the user, and no redirection occurs.
+
+### Technical Diagnosis & Action Plan
+
+This is a classic sign of a failed API call or an unhandled promise rejection in the front-end submission handler.
+
+| Component | Action Plan | Debugging Prompts |
+| :--- | :--- | :--- |
+| **Front-End** | Verify the form's `onSubmit` handler is correctly structured to prevent default submission and execute the API call. Ensure the `fetch` or `axios` call is correctly catching and displaying errors. | **"Check the Network tab in DevTools for the POST request to the login endpoint. What is the HTTP status code (e.g., 401, 500)?"** |
+| **Back-End API** | Verify the login endpoint is running and accessible. Check the back-end server logs for any exceptions or errors thrown when the login request is received. | **"Is the login endpoint receiving the request? If so, is the server throwing an exception before returning a response?"** |
+| **Error Handling** | Implement clear, user-facing error messages for common failures (e.g., "Invalid credentials," "Server unavailable"). | **"Ensure the front-end displays a message like 'Invalid email or password' on a 401 response."** |
+
+---
+
+## Issue 2: Vehicle Data Fetch Failure
+
+**Location:** `/search` page
+**Severity:** High (Blocks Core Product Filtering)
+
+### Problem Description
+
+The "Make" dropdown on the `/search` page is empty. The previous version of the site displayed a **"Failed to fetch makes"** error, which is now suppressed, but the underlying data failure persists. This prevents users from filtering products by vehicle, which is a critical feature for an auto parts store.
+
+### Technical Diagnosis & Action Plan
+
+This indicates a failure in the API call responsible for populating the vehicle make/model data.
+
+| Component | Action Plan | Debugging Prompts |
+| :--- | :--- | :--- |
+| **Front-End** | Verify the component responsible for fetching vehicle data is correctly calling the API endpoint on mount. Ensure it is gracefully handling an empty array (`[]`) response, but not a network or server error. | **"Check the Network tab for the API call that fetches vehicle makes. What is the HTTP status code and the response body?"** |
+| **Back-End API** | Verify the vehicle data endpoint is running and accessible. Check the back-end server logs for any exceptions. Since the database is intentionally empty, the endpoint should return a successful response with an empty array (`200 OK` with `[]`), not a server error (`500 Internal Server Error`). | **"If the database is empty, is the API returning a `200 OK` with an empty array, or is it returning a `500 Internal Server Error`?"** |
+
+---
+
+## Next Steps
+
+Once these two back-end issues are resolved, please notify the client (your boss) with the new ngrok URL, and I will perform a final verification test.
+
+Thank you for your prompt attention to these critical items.
