@@ -1,5 +1,5 @@
 
-import { NextApiRequest, NextApiResponse } => 'next';
+import { NextApiRequest, NextApiResponse } from 'next';
 import Stripe from 'stripe';
 import { buffer } from 'micro';
 import { createOrder, addOrderItems, clearCart, updateOrderStatus } from '../../../lib/db';
