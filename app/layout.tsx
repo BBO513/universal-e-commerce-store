@@ -1,13 +1,14 @@
 'use client';
 
-import { Inter } from "next/font/google";
-import Navbar from "@/components/Navbar"; // Restored
+import { Inter, Playfair_Display } from "next/font/google";
+import Navbar from "@/components/Navbar";
 import "@/styles/globals.css";
-import { SessionProvider } from "next-auth/react"; // Import SessionProvider
-import { CartProvider } from "@/context/CartContext"; // Import CartProvider
-import { CurrencyProvider } from "@/context/CurrencyContext"; // Import CurrencyProvider
+import { SessionProvider } from "next-auth/react";
+import { CartProvider } from "@/context/CartContext";
+import { CurrencyProvider } from "@/context/CurrencyContext";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
+const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-heading", weight: ["400", "500", "600", "700"], display: "swap" });
 
 export default function RootLayout({
   children,
@@ -15,13 +16,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
+    <html lang="en" className="scroll-smooth">
+      <body className={`${inter.variable} ${playfair.variable} bg-boutique-bg text-slate-950 antialiased`}>
         <SessionProvider>
-          <CurrencyProvider> {/* Wrap with CurrencyProvider */}
+          <CurrencyProvider>
             <CartProvider>
-              <Navbar /> {/* Restored */}
-              <main>{children}</main>
+              <div className="min-h-screen bg-boutique-bg">
+                <Navbar />
+                <main className="min-h-[calc(100vh-4rem)]">
+                  {children}
+                </main>
+              </div>
             </CartProvider>
           </CurrencyProvider>
         </SessionProvider>

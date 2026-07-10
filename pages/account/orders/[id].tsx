@@ -4,7 +4,7 @@ import { getSession, useSession } from 'next-auth/react';
 import Head from 'next/head';
 import Link from 'next/link';
 import Layout from '../../../components/Layout'; // Assuming a general layout component
-import Image from 'next/image';
+import FadeAspectImage from '../../../components/FadeAspectImage';
 
 interface OrderItem {
   product_id: number;
@@ -140,7 +140,13 @@ export default function OrderDetailPage({ order }: OrderDetailPageProps) {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       <div className="flex items-center">
                         {item.images && item.images.length > 0 && (
-                          <Image src={item.images[0]} alt={item.title} width={40} height={40} objectFit="cover" className="rounded mr-2" />
+                          <FadeAspectImage
+                            src={item.images[0]}
+                            alt={item.title}
+                            aspect="aspect-square"
+                            wrapperClassName="w-10 mr-2"
+                            className="rounded-2xl"
+                          />
                         )}
                         {item.title}
                       </div>

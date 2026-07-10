@@ -6,14 +6,14 @@ import MobileNavBar from './MobileNavBar'; // Import MobileNavBar
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen bg-boutique-bg text-slate-950">
       <Header />
-      <main className="flex-grow container mx-auto p-4">
+      <main className="flex-grow section-shell">
         {children}
       </main>
       <Footer />
-      <PWAInstallPrompt /> {/* Render the PWA install prompt */}
-      <MobileNavBar /> {/* Render the mobile navigation bar */}
+      <PWAInstallPrompt />
+      <MobileNavBar />
     </div>
   );
 }

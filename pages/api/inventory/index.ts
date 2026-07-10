@@ -25,9 +25,6 @@ export default async function handler(
         stock,
         images,
         brand,
-        modelCompatibility,
-        vehicleYearStart,
-        vehicleYearEnd,
       } = req.body;
 
       const newProduct = await createProduct(
@@ -39,10 +36,7 @@ export default async function handler(
         categoryId,
         stock,
         images,
-        brand,
-        modelCompatibility,
-        vehicleYearStart,
-        vehicleYearEnd
+        brand
       );
 
       res.status(201).json(newProduct);

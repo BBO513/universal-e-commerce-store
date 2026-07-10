@@ -3,21 +3,15 @@ import { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState, useEffect, useCallback, Suspense } from 'react'; // Import Suspense
-import dynamic from 'next/dynamic'; // Import dynamic
+import { useState, useEffect } from 'react';
 import { getProductById, getCategoryById, Review } from '../../lib/db';
+import FadeAspectImage from '../../components/FadeAspectImage';
 import { useCart } from '../../context/CartContext';
 import { useCurrency } from '../../context/CurrencyContext';
 import ReviewList from '../../components/reviews/ReviewList';
 import ReviewForm from '../../components/reviews/ReviewForm';
 import { StarRating } from '../../components/StarRating';
-import { FaHeart, FaRegHeart } from 'react-icons/fa'; // Import heart icons
-// import VehicleSelector from '../../components/VehicleSelector'; // Removed direct import
-
-const DynamicVehicleSelector = dynamic(() => import('../../components/VehicleSelector'), {
-  suspense: true,
-  ssr: false, // VehicleSelector component might rely on browser APIs, so disable SSR
-});
+import { FaHeart, FaRegHeart } from 'react-icons/fa';
 
 interface ProductDetailPageProps {
   product: {
@@ -31,9 +25,6 @@ interface ProductDetailPageProps {
     images: string[];
     category_id?: number;
     brand?: string;
-    model_compatibility?: string[];
-    vehicle_year_start?: number;
-    vehicle_year_end?: number;
   };
   category?: {
     id: number;
@@ -44,16 +35,9 @@ interface ProductDetailPageProps {
   reviewCount: number;
   reviews: Review[];
   hasPurchased: boolean;
-  selectedVehicle?: SelectedVehicle;
 }
 
-interface SelectedVehicle {
-  make: string;
-  model: string;
-  year: number;
-}
-
-export default function ProductDetailPage({ product, category, averageRating, reviewCount, reviews, hasPurchased, selectedVehicle: initialSelectedVehicle }: ProductDetailPageProps) {
+export default function ProductDetailPage({ product, category, averageRating, reviewCount, reviews, hasPurchased }: ProductDetailPageProps) {
   const { data: session } = useSession();
   const [mainImage, setMainImage] = useState(product.images?.[0] || '/placeholder-image.png');
   const { addItem } = useCart();
@@ -64,8 +48,6 @@ export default function ProductDetailPage({ product, category, averageRating, re
   const [currentAverageRating, setCurrentAverageRating] = useState<number>(averageRating);
   const [currentReviewCount, setCurrentReviewCount] = useState<number>(reviewCount);
   const [isWishlisted, setIsWishlisted] = useState(false);
-  const [selectedVehicle, setSelectedVehicle] = useState<SelectedVehicle | null>(initialSelectedVehicle || null);
-  const [fitsVehicle, setFitsVehicle] = useState(false);
 
   useEffect(() => {
     const checkWishlistStatus = async () => {
@@ -83,30 +65,6 @@ export default function ProductDetailPage({ product, category, averageRating, re
     };
     checkWishlistStatus();
   }, [session, product.id]);
-
-  const checkCompatibility = useCallback((product: ProductDetailPageProps['product'], vehicle: SelectedVehicle | null) => {
-    if (!vehicle) return false;
-
-    // Check brand compatibility
-    const brandMatch = !product.brand || product.brand.toLowerCase() === vehicle.make.toLowerCase();
-    if (!brandMatch) return false;
-
-    // Check model compatibility
-    const modelMatch = !product.model_compatibility || product.model_compatibility.some(
-      (model) => model.toLowerCase() === vehicle.model.toLowerCase()
-    );
-    if (!modelMatch) return false;
-
-    // Check year compatibility
-    const yearMatch = (!product.vehicle_year_start || vehicle.year >= product.vehicle_year_start) &&
-                      (!product.vehicle_year_end || vehicle.year <= product.vehicle_year_end);
-    
-    return brandMatch && modelMatch && yearMatch;
-  }, []);
-
-  useEffect(() => {
-    setFitsVehicle(checkCompatibility(product, selectedVehicle));
-  }, [selectedVehicle, product, checkCompatibility]);
 
   const formatPrice = (value: number) => {
     const convertedPrice = value * exchangeRates[currency];
@@ -277,38 +235,36 @@ export default function ProductDetailPage({ product, category, averageRating, re
           </ul>
         </nav>
 
-        <Suspense fallback={<div>Loading Vehicle Selector...</div>}>
-          <DynamicVehicleSelector onVehicleSelect={setSelectedVehicle} />
-        </Suspense>
-
         <div className="flex flex-col md:flex-row gap-8 mt-8">
           {/* Image Gallery */}
           <div className="md:w-1/2">
-            <div className="relative w-full h-96 bg-gray-100 rounded-lg overflow-hidden">
-              <Image
-                src={mainImage}
-                alt={product.title}
-                layout="fill"
-                objectFit="contain"
-                className="object-center"
-              />
+            <FadeAspectImage
+            src={mainImage}
+            alt={product.title}
+            aspect="aspect-video"
+            wrapperClassName="w-full"
+            className="object-contain"
+          />
+          {product.images && product.images.length > 1 && (
+            <div className="flex gap-2 mt-4 overflow-x-auto">
+              {product.images.map((image, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() => setMainImage(image)}
+                  className={`relative w-20 ${image === mainImage ? 'ring-2 ring-boutique-accent' : ''} rounded-3xl overflow-hidden shrink-0`}
+                >
+                  <FadeAspectImage
+                    src={image}
+                    alt={`Thumbnail ${index + 1}`}
+                    aspect="aspect-square"
+                    wrapperClassName="w-full"
+                    className="object-cover"
+                  />
+                </button>
+              ))}
             </div>
-            {product.images && product.images.length > 1 && (
-              <div
-                className="flex gap-2 mt-4 overflow-x-auto">
-                {product.images.map((image, index) => (
-                  <div
-                    key={index}
-                    className={`relative w-20 h-20 cursor-pointer border-2 ${
-                      image === mainImage ? 'border-blue-500' : 'border-transparent'
-                    } rounded-md overflow-hidden`}
-                    onClick={() => setMainImage(image)}
-                  >
-                    <Image src={image} alt={`Thumbnail ${index + 1}`} layout="fill" objectFit="cover" />
-                  </div>
-                ))}
-              </div>
-            )}
+          )}
           </div>
 
           {/* Product Details */}
@@ -318,11 +274,6 @@ export default function ProductDetailPage({ product, category, averageRating, re
               <StarRating rating={currentAverageRating} />
               <span className="ml-2 text-gray-600">({currentReviewCount} reviews)</span>
             </div>
-            {fitsVehicle && (
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 mb-4">
-                Fits Your Selected Vehicle!
-              </span>
-            )}
             <p className="text-gray-600 text-lg mb-4">SKU: {product.sku || 'N/A'}</p>
             <p className="text-5xl font-extrabold text-blue-600 mb-4">{formatPrice(product.price)}</p>
 

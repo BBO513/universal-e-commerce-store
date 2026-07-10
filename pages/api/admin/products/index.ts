@@ -34,7 +34,7 @@ export default async function handler(
       res.status(500).json({ message: 'Internal Server Error' });
     }
   } else if (req.method === 'POST') {
-    const { title, description, price, sku, condition, categoryId, stock, images, brand, modelCompatibility, vehicleYearStart, vehicleYearEnd } = req.body;
+    const { title, description, price, sku, condition, categoryId, stock, images, brand } = req.body;
 
     if (!title || !price || !sku || !condition || !categoryId || stock === undefined || !images) {
       return res.status(400).json({ message: 'Missing required product fields' });
@@ -50,10 +50,7 @@ export default async function handler(
         categoryId,
         stock,
         images,
-        brand,
-        modelCompatibility,
-        vehicleYearStart,
-        vehicleYearEnd
+        brand
       );
       res.status(201).json(newProduct);
     } catch (error) {

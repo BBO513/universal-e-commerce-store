@@ -14,9 +14,6 @@ export default async function handler(
         maxPrice,
         minStock,
         maxStock,
-        modelCompatibility,
-        vehicleYearStart,
-        vehicleYearEnd,
         category_id,
         searchQuery,
         page,
@@ -31,9 +28,6 @@ export default async function handler(
       if (maxPrice) filters.maxPrice = parseFloat(maxPrice as string);
       if (minStock) filters.minStock = parseInt(minStock as string, 10);
       if (maxStock) filters.maxStock = parseInt(maxStock as string, 10);
-      if (modelCompatibility) filters.modelCompatibility = modelCompatibility as string;
-      if (vehicleYearStart) filters.vehicleYearStart = parseInt(vehicleYearStart as string, 10);
-      if (vehicleYearEnd) filters.vehicleYearEnd = parseInt(vehicleYearEnd as string, 10);
       if (category_id) filters.category_id = parseInt(category_id as string, 10);
       if (searchQuery) filters.searchQuery = searchQuery as string;
       if (page) filters.page = parseInt(page as string, 10);

@@ -1,0 +1,31 @@
+{
+  "storeName": "Universal E-Commerce Engine",
+  "shortName": "UEE",
+  "tagline": "Plug-and-play storefronts for premium brands",
+  "heroHeading": "A premium store experience that launches from one JSON file.",
+  "heroSubheading": "Edit your inventory and branding in config/products.json and config/theme.json — zero code required.",
+  "heroCtaPrimary": "Browse Catalog",
+  "heroCtaSecondary": "Explore Categories",
+  "heroImage": "https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?auto=format&fit=crop&w=1400&q=80",
+  "buttonText": "Start Shopping",
+  "colors": {
+    "background": "#020617",
+    "surface": "#0f172a",
+    "card": "#111827",
+    "text": "#f8fafc",
+    "muted": "#94a3b8",
+    "accent": "#7dd3fc",
+    "button": "#38bdf8",
+    "buttonText": "#020617"
+  },
+  "metadata": {
+    "title": "Universal E-Commerce Engine",
+    "description": "A modern plug-and-play store template with editable inventory and premium branding settings."
+  },
+  "links": {
+    "home": "/",
+    "catalog": "/categories",
+    "search": "/search",
+    "account": "/login"
+  }
+}

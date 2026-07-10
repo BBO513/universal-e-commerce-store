@@ -23,9 +23,6 @@ export default function ProductForm({ initialData, onSubmit, onCancel }: Product
   const [stock, setStock] = useState(initialData?.stock || 0);
   const [images, setImages] = useState<string[]>(initialData?.images || []);
   const [brand, setBrand] = useState(initialData?.brand || '');
-  const [modelCompatibility, setModelCompatibility] = useState(initialData?.model_compatibility?.join(', ') || '');
-  const [vehicleYearStart, setVehicleYearStart] = useState(initialData?.vehicle_year_start || '');
-  const [vehicleYearEnd, setVehicleYearEnd] = useState(initialData?.vehicle_year_end || '');
   const [specifications, setSpecifications] = useState<Array<{ key: string; value: string }>>(
     initialData?.specifications || [{ key: '', value: '' }]
   );
@@ -118,9 +115,6 @@ export default function ProductForm({ initialData, onSubmit, onCancel }: Product
         stock: parseInt(stock, 10),
         images,
         brand,
-        modelCompatibility: modelCompatibility.split(',').map(s => s.trim()).filter(s => s.length > 0),
-        vehicleYearStart: vehicleYearStart ? parseInt(vehicleYearStart, 10) : null,
-        vehicleYearEnd: vehicleYearEnd ? parseInt(vehicleYearEnd, 10) : null,
         specifications: specifications.filter(spec => spec.key && spec.value), // Filter out empty specs
       });
     } catch (err: any) {
@@ -238,40 +232,6 @@ export default function ProductForm({ initialData, onSubmit, onCancel }: Product
           onChange={(e) => setBrand(e.target.value)}
           className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
         />
-      </div>
-
-      <div>
-        <label htmlFor="modelCompatibility" className="block text-sm font-medium text-gray-700">Model Compatibility (comma-separated)</label>
-        <textarea
-          id="modelCompatibility"
-          value={modelCompatibility}
-          onChange={(e) => setModelCompatibility(e.target.value)}
-          rows={3}
-          className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
-        ></textarea>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label htmlFor="vehicleYearStart" className="block text-sm font-medium text-gray-700">Vehicle Year Start</label>
-          <input
-            type="number"
-            id="vehicleYearStart"
-            value={vehicleYearStart}
-            onChange={(e) => setVehicleYearStart(e.target.value)}
-            className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
-          />
-        </div>
-        <div>
-          <label htmlFor="vehicleYearEnd" className="block text-sm font-medium text-gray-700">Vehicle Year End</label>
-          <input
-            type="number"
-            id="vehicleYearEnd"
-            value={vehicleYearEnd}
-            onChange={(e) => setVehicleYearEnd(e.target.value)}
-            className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
-          />
-        </div>
       </div>
 
       {/* Image Uploader */}

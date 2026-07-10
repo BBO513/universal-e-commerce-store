@@ -22,7 +22,7 @@ export default async function handler(
   const productId = parseInt(id, 10);
 
   if (req.method === 'PUT') {
-    const { title, description, price, sku, condition, categoryId, stock, images, brand, modelCompatibility, vehicleYearStart, vehicleYearEnd } = req.body;
+    const { title, description, price, sku, condition, categoryId, stock, images, brand } = req.body;
 
     if (!title || !price || !sku || !condition || !categoryId || stock === undefined || !images) {
       return res.status(400).json({ message: 'Missing required product fields' });
@@ -39,10 +39,7 @@ export default async function handler(
         categoryId,
         stock,
         images,
-        brand,
-        modelCompatibility,
-        vehicleYearStart,
-        vehicleYearEnd
+        brand
       );
       if (updatedProduct) {
         res.status(200).json(updatedProduct);

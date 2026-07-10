@@ -1,0 +1,52 @@
+{
+  "products": [
+    {
+      "id": "1",
+      "title": "Premium Workspace Chair",
+      "description": "A modern ergonomic chair with refined details, premium support, and a tailored finish.",
+      "price": 249.0,
+      "image": "https://images.unsplash.com/photo-1519710164239-da123dc03ef4?auto=format&fit=crop&w=900&q=80",
+      "categorySlug": "workspace",
+      "categoryName": "Workspace Essentials",
+      "stock": 32,
+      "condition": "new",
+      "tags": ["office", "comfort", "premium"]
+    },
+    {
+      "id": "2",
+      "title": "Luxe Ambient Desk Lamp",
+      "description": "A refined desk lamp with soft lighting and polished finishes for upscale workspaces.",
+      "price": 129.0,
+      "image": "https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=900&q=80",
+      "categorySlug": "lighting",
+      "categoryName": "Lighting & Decor",
+      "stock": 18,
+      "condition": "new",
+      "tags": ["lighting", "design", "decor"]
+    },
+    {
+      "id": "3",
+      "title": "Signature Smart Speaker",
+      "description": "A premium smart speaker with crisp audio, intelligent controls, and a sculptural silhouette.",
+      "price": 199.0,
+      "image": "https://images.unsplash.com/photo-1518443964400-5c9cc2800f36?auto=format&fit=crop&w=900&q=80",
+      "categorySlug": "electronics",
+      "categoryName": "Smart Living",
+      "stock": 24,
+      "condition": "new",
+      "tags": ["audio", "smart home", "luxury"]
+    },
+    {
+      "id": "4",
+      "title": "Statement Wall Art",
+      "description": "A gallery-quality framed wall print that elevates any room with elegant simplicity.",
+      "price": 89.0,
+      "image": "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=900&q=80",
+      "categorySlug": "decor",
+      "categoryName": "Decor & Accents",
+      "stock": 41,
+      "condition": "new",
+      "tags": ["art", "decor", "modern"]
+    }
+  ]
+}

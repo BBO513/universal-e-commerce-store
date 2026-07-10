@@ -1,3 +1,114 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --color-background: #F8F7F4;
+  --color-surface: #FFFFFF;
+  --color-surface-soft: #F4F2EE;
+  --color-foreground: #111827;
+  --color-muted: #6B7280;
+  --color-accent: #0F4B5F;
+  --color-accent-soft: #DDE8ED;
+  --color-border: #D8D6D3;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply min-h-screen bg-boutique-bg text-slate-950 antialiased;
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+  line-height: 1.75;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+button,
+a {
+  font-family: var(--font-heading);
+}
+
+h1 {
+  @apply text-4xl md:text-5xl font-semibold tracking-tight leading-tight;
+}
+
+h2 {
+  @apply text-3xl md:text-4xl font-semibold tracking-tight leading-tight;
+}
+
+h3 {
+  @apply text-2xl font-semibold tracking-tight;
+}
+
+h4 {
+  @apply text-xl font-semibold tracking-tight;
+}
+
+p,
+span,
+label,
+input,
+textarea,
+select {
+  @apply text-base text-slate-700;
+}
+
+::selection {
+  background: rgba(15, 75, 95, 0.12);
+  color: var(--color-foreground);
+}
+
+img {
+  @apply block max-w-full;
+}
+
+@keyframes shimmer {
+  0% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.5;
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 1.5s infinite ease-in-out;
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-full bg-boutique-accent text-white font-semibold px-6 py-3 transition duration-300 ease-in-out hover:bg-slate-900 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-boutique-accent/20 focus:ring-offset-2 focus:ring-offset-boutique-bg;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center rounded-full bg-slate-100 text-slate-950 font-semibold px-5 py-3 transition duration-300 ease-in-out hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-900/10;
+  }
+
+  .card-surface {
+    @apply bg-white border border-slate-200/80 rounded-[1.75rem] shadow-boutique overflow-hidden transition-all duration-300 ease-out;
+  }
+
+  .card-surface:hover {
+    @apply -translate-y-0.5 shadow-[0_24px_48px_rgba(15,23,42,0.12)];
+  }
+
+  .section-shell {
+    @apply container mx-auto px-4 py-10 md:py-14;
+  }
+
+  .hero-shell {
+    @apply max-w-6xl mx-auto px-4 py-16 md:py-24;
+  }
+}

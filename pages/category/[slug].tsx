@@ -1,24 +1,17 @@
 import { GetServerSideProps } from 'next';
 import { useRouter } from 'next/router';
-import { useState, useEffect, Suspense } from 'react'; // Import Suspense
-import dynamic from 'next/dynamic'; // Import dynamic
+import { useState, useEffect, Suspense } from 'react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import Image from 'next/image'; // Import Image for og:image
-import Head from 'next/head'; // Import Head
+import Image from 'next/image';
+import Head from 'next/head';
 import ProductCard from '../../components/ProductCard';
 import ProductGridSkeleton from '../../components/ProductGridSkeleton';
-// import Filters from '../../components/Filters'; // Removed direct import
-// import VehicleSelector from '../../components/VehicleSelector'; // Removed direct import
 import { getCategoryBySlug } from '../../lib/db';
 
 const DynamicFilters = dynamic(() => import('../../components/Filters'), {
   suspense: true,
-  ssr: false, // Filters component might rely on browser APIs, so disable SSR
-});
-
-const DynamicVehicleSelector = dynamic(() => import('../../components/VehicleSelector'), {
-  suspense: true,
-  ssr: false, // VehicleSelector component might rely on browser APIs, so disable SSR
+  ssr: false,
 });
 
 interface CategoryPageProps {
@@ -34,12 +27,6 @@ interface CategoryPageProps {
   limit: number;
 }
 
-interface SelectedVehicle {
-  make: string;
-  model: string;
-  year: number;
-}
-
 export default function CategoryPage({
   category,
   initialProducts = [],
@@ -52,14 +39,6 @@ export default function CategoryPage({
   const [loading, setLoading] = useState(false);
   const [currentTotalProducts, setCurrentTotalProducts] = useState(totalProducts || 0);
   const [currentCurrentPage, setCurrentCurrentPage] = useState(currentPage || 1);
-  const [selectedVehicle, setSelectedVehicle] = useState<SelectedVehicle | null>(null);
-
-  useEffect(() => {
-    const savedVehicle = localStorage.getItem('selectedVehicle');
-    if (savedVehicle) {
-      setSelectedVehicle(JSON.parse(savedVehicle));
-    }
-  }, []);
 
   const totalPages = Math.ceil(currentTotalProducts / limit);
 
@@ -105,14 +84,6 @@ export default function CategoryPage({
       const max = activeFilters.maxPrice || 'Max';
       tags.push({ key: 'priceRange', value: `${min}-${max}`, label: `Price: $${min} - $${max}` });
     }
-    if (activeFilters.modelCompatibility) {
-      tags.push({ key: 'modelCompatibility', value: activeFilters.modelCompatibility as string, label: `Model: ${activeFilters.modelCompatibility}` });
-    }
-    if (activeFilters.vehicleYearStart || activeFilters.vehicleYearEnd) {
-      const start = activeFilters.vehicleYearStart || 'Any';
-      const end = activeFilters.vehicleYearEnd || 'Any';
-      tags.push({ key: 'yearRange', value: `${start}-${end}`, label: `Year: ${start} - ${end}` });
-    }
     // category_id is inherent to the page, so not a removable filter tag here
     if (activeFilters.searchQuery) {
       tags.push({ key: 'searchQuery', value: activeFilters.searchQuery as string, label: `Keyword: "${activeFilters.searchQuery}"` });
@@ -126,9 +97,6 @@ export default function CategoryPage({
     if (key === 'priceRange') {
       delete newQuery.minPrice;
       delete newQuery.maxPrice;
-    } else if (key === 'yearRange') {
-      delete newQuery.vehicleYearStart;
-      delete newQuery.vehicleYearEnd;
     } else if (key === 'searchQuery') {
       delete newQuery.searchQuery;
     }
@@ -174,9 +142,6 @@ export default function CategoryPage({
         <div className="md:w-1/4 pr-4">
           <Suspense fallback={<div>Loading Filters...</div>}>
             <DynamicFilters />
-          </Suspense>
-          <Suspense fallback={<div>Loading Vehicle Selector...</div>}>
-            <DynamicVehicleSelector onVehicleSelect={setSelectedVehicle} />
           </Suspense>
         </div>
         <div className="md:w-3/4">
@@ -239,10 +204,6 @@ export default function CategoryPage({
                     condition={product.condition as 'new' | 'used'}
                     stock={product.stock}
                     brand={product.brand}
-                    model_compatibility={product.model_compatibility}
-                    vehicle_year_start={product.vehicle_year_start}
-                    vehicle_year_end={product.vehicle_year_end}
-                    selectedVehicle={selectedVehicle}
                   />
                 ))}
               </div>

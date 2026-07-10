@@ -23,64 +23,43 @@ INSERT INTO categories (name, slug, parent_id, description) VALUES
 ('Brake Pads', 'brake-pads', 2, 'Brake pad sets'),
 ('Brake Rotors', 'brake-rotors', 2, 'Brake disc rotors');
 
--- Insert vehicles
-INSERT INTO vehicles (make, model, year_start, year_end) VALUES
-('Toyota', 'Camry', 2015, 2023),
-('Honda', 'Civic', 2016, 2023),
-('Ford', 'Ranger', 2011, 2023),
-('Mazda', 'CX-5', 2017, 2023),
-('Holden', 'Commodore', 2013, 2020);
+
 
 -- Insert products
-INSERT INTO products (title, description, price, sku, condition, category_id, stock, images, brand, model_compatibility, vehicle_year_start, vehicle_year_end) VALUES
+INSERT INTO products (title, description, price, sku, condition, category_id, stock, images, brand) VALUES
 -- Oil Filters
-('Premium Oil Filter - Toyota/Lexus', 'High-quality oil filter suitable for Toyota and Lexus vehicles. Ensures optimal engine performance and longevity.', 24.99, 'OF-TOY-001', 'new', 7, 150, ARRAY['/images/products/oil-filter-1.jpg'], 'Ryco', ARRAY['Camry', 'Corolla', 'RAV4'], 2015, 2023),
-('Economy Oil Filter - Honda', 'Reliable oil filter for Honda vehicles. Good value for money.', 18.99, 'OF-HON-001', 'new', 7, 200, ARRAY['/images/products/oil-filter-2.jpg'], 'Sakura', ARRAY['Civic', 'Accord', 'CR-V'], 2016, 2023),
+('Premium Oil Filter - Toyota/Lexus', 'High-quality oil filter suitable for Toyota and Lexus vehicles. Ensures optimal engine performance and longevity.', 24.99, 'OF-TOY-001', 'new', 7, 150, ARRAY['/images/products/oil-filter-1.jpg'], 'Ryco'),
+('Economy Oil Filter - Honda', 'Reliable oil filter for Honda vehicles. Good value for money.', 18.99, 'OF-HON-001', 'new', 7, 200, ARRAY['/images/products/oil-filter-2.jpg'], 'Sakura'),
 
 -- Air Filters
-('Performance Air Filter - Universal', 'High-flow air filter for improved engine performance. Washable and reusable.', 89.99, 'AF-UNI-001', 'new', 8, 75, ARRAY['/images/products/air-filter-1.jpg'], 'K&N', ARRAY['Universal'], 2010, 2023),
-('Standard Air Filter - Ford Ranger', 'OEM-quality air filter for Ford Ranger. Direct replacement.', 32.99, 'AF-FOR-001', 'new', 8, 120, ARRAY['/images/products/air-filter-2.jpg'], 'Ryco', ARRAY['Ranger'], 2011, 2023),
+('Performance Air Filter - Universal', 'High-flow air filter for improved engine performance. Washable and reusable.', 89.99, 'AF-UNI-001', 'new', 8, 75, ARRAY['/images/products/air-filter-1.jpg'], 'K&N'),
+('Standard Air Filter - Ford Ranger', 'OEM-quality air filter for Ford Ranger. Direct replacement.', 32.99, 'AF-FOR-001', 'new', 8, 120, ARRAY['/images/products/air-filter-2.jpg'], 'Ryco'),
 
 -- Brake Pads
-('Ceramic Brake Pads - Front - Toyota Camry', 'Premium ceramic brake pads for quiet, dust-free braking. Front axle set.', 129.99, 'BP-TOY-001', 'new', 9, 80, ARRAY['/images/products/brake-pads-1.jpg'], 'Bendix', ARRAY['Camry'], 2015, 2023),
-('Semi-Metallic Brake Pads - Rear - Honda Civic', 'Durable semi-metallic brake pads. Rear axle set.', 89.99, 'BP-HON-001', 'new', 9, 95, ARRAY['/images/products/brake-pads-2.jpg'], 'Bendix', ARRAY['Civic'], 2016, 2023),
+('Ceramic Brake Pads - Front - Toyota Camry', 'Premium ceramic brake pads for quiet, dust-free braking. Front axle set.', 129.99, 'BP-TOY-001', 'new', 9, 80, ARRAY['/images/products/brake-pads-1.jpg'], 'Bendix'),
+('Semi-Metallic Brake Pads - Rear - Honda Civic', 'Durable semi-metallic brake pads. Rear axle set.', 89.99, 'BP-HON-001', 'new', 9, 95, ARRAY['/images/products/brake-pads-2.jpg'], 'Bendix'),
 
 -- Brake Rotors
-('Slotted Brake Rotors - Front Pair - Mazda CX-5', 'Performance slotted rotors for improved braking and heat dissipation.', 249.99, 'BR-MAZ-001', 'new', 10, 45, ARRAY['/images/products/brake-rotor-1.jpg'], 'DBA', ARRAY['CX-5'], 2017, 2023),
-('Standard Brake Rotors - Rear Pair - Ford Ranger', 'OEM-quality brake rotors. Rear axle pair.', 189.99, 'BR-FOR-001', 'new', 10, 60, ARRAY['/images/products/brake-rotor-2.jpg'], 'RDA', ARRAY['Ranger'], 2011, 2023),
+('Slotted Brake Rotors - Front Pair - Mazda CX-5', 'Performance slotted rotors for improved braking and heat dissipation.', 249.99, 'BR-MAZ-001', 'new', 10, 45, ARRAY['/images/products/brake-rotor-1.jpg'], 'DBA'),
+('Standard Brake Rotors - Rear Pair - Ford Ranger', 'OEM-quality brake rotors. Rear axle pair.', 189.99, 'BR-FOR-001', 'new', 10, 60, ARRAY['/images/products/brake-rotor-2.jpg'], 'RDA'),
 
 -- Engine Parts
-('Spark Plug Set - 4 Pack - Toyota', 'Iridium spark plugs for extended life and performance.', 79.99, 'SP-TOY-001', 'new', 1, 100, ARRAY['/images/products/spark-plugs-1.jpg'], 'NGK', ARRAY['Camry', 'Corolla'], 2015, 2023),
-('Timing Belt Kit - Honda Civic', 'Complete timing belt kit including tensioner and water pump.', 299.99, 'TB-HON-001', 'new', 1, 35, ARRAY['/images/products/timing-belt-1.jpg'], 'Gates', ARRAY['Civic'], 2016, 2020),
+('Spark Plug Set - 4 Pack - Toyota', 'Iridium spark plugs for extended life and performance.', 79.99, 'SP-TOY-001', 'new', 1, 100, ARRAY['/images/products/spark-plugs-1.jpg'], 'NGK'),
+('Timing Belt Kit - Honda Civic', 'Complete timing belt kit including tensioner and water pump.', 299.99, 'TB-HON-001', 'new', 1, 35, ARRAY['/images/products/timing-belt-1.jpg'], 'Gates'),
 
 -- Suspension
-('Front Shock Absorbers - Pair - Ford Ranger', 'Heavy-duty shock absorbers for improved ride quality.', 349.99, 'SA-FOR-001', 'new', 3, 40, ARRAY['/images/products/shocks-1.jpg'], 'Monroe', ARRAY['Ranger'], 2011, 2023),
-('Rear Coil Springs - Pair - Holden Commodore', 'OEM-quality coil springs for rear suspension.', 189.99, 'CS-HOL-001', 'new', 3, 30, ARRAY['/images/products/springs-1.jpg'], 'King Springs', ARRAY['Commodore'], 2013, 2020),
+('Front Shock Absorbers - Pair - Ford Ranger', 'Heavy-duty shock absorbers for improved ride quality.', 349.99, 'SA-FOR-001', 'new', 3, 40, ARRAY['/images/products/shocks-1.jpg'], 'Monroe'),
+('Rear Coil Springs - Pair - Holden Commodore', 'OEM-quality coil springs for rear suspension.', 189.99, 'CS-HOL-001', 'new', 3, 30, ARRAY['/images/products/springs-1.jpg'], 'King Springs'),
 
 -- Electrical
-('Battery - 12V 70Ah - Universal', 'Maintenance-free car battery with 3-year warranty.', 199.99, 'BAT-UNI-001', 'new', 4, 50, ARRAY['/images/products/battery-1.jpg'], 'Century', ARRAY['Universal'], 2010, 2023),
-('Alternator - Toyota Camry', 'Remanufactured alternator with 2-year warranty.', 299.99, 'ALT-TOY-001', 'used', 4, 15, ARRAY['/images/products/alternator-1.jpg'], 'Bosch', ARRAY['Camry'], 2015, 2020),
+('Battery - 12V 70Ah - Universal', 'Maintenance-free car battery with 3-year warranty.', 199.99, 'BAT-UNI-001', 'new', 4, 50, ARRAY['/images/products/battery-1.jpg'], 'Century'),
+('Alternator - Toyota Camry', 'Remanufactured alternator with 2-year warranty.', 299.99, 'ALT-TOY-001', 'used', 4, 15, ARRAY['/images/products/alternator-1.jpg'], 'Bosch'),
 
 -- Body Parts
-('Side Mirror - Right - Honda Civic', 'Replacement side mirror with indicator. Right side.', 149.99, 'SM-HON-001', 'new', 5, 25, ARRAY['/images/products/mirror-1.jpg'], 'Genuine Honda', ARRAY['Civic'], 2016, 2023),
-('Headlight Assembly - Left - Mazda CX-5', 'OEM-quality headlight assembly. Left side.', 399.99, 'HL-MAZ-001', 'new', 5, 18, ARRAY['/images/products/headlight-1.jpg'], 'TYC', ARRAY['CX-5'], 2017, 2023);
+('Side Mirror - Right - Honda Civic', 'Replacement side mirror with indicator. Right side.', 149.99, 'SM-HON-001', 'new', 5, 25, ARRAY['/images/products/mirror-1.jpg'], 'Genuine Honda'),
+('Headlight Assembly - Left - Mazda CX-5', 'OEM-quality headlight assembly. Left side.', 399.99, 'HL-MAZ-001', 'new', 5, 18, ARRAY['/images/products/headlight-1.jpg'], 'TYC');
 
--- Map products to vehicles
-INSERT INTO product_vehicle_map (product_id, vehicle_id) VALUES
-(1, 1), -- Oil filter to Toyota Camry
-(2, 2), -- Oil filter to Honda Civic
-(4, 3), -- Air filter to Ford Ranger
-(5, 1), -- Brake pads to Toyota Camry
-(6, 2), -- Brake pads to Honda Civic
-(7, 4), -- Brake rotors to Mazda CX-5
-(8, 3), -- Brake rotors to Ford Ranger
-(9, 1), -- Spark plugs to Toyota Camry
-(10, 2), -- Timing belt to Honda Civic
-(11, 3), -- Shocks to Ford Ranger
-(12, 5), -- Springs to Holden Commodore
-(14, 1), -- Alternator to Toyota Camry
-(15, 2), -- Mirror to Honda Civic
-(16, 4); -- Headlight to Mazda CX-5
+
 
 -- Insert sample addresses
 INSERT INTO addresses (user_id, type, street, city, state, postcode, is_default) VALUES

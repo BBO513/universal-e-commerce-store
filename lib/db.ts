@@ -66,9 +66,6 @@ export interface Product {
   images: string[];
   created_at: string;
   brand?: string;
-  model_compatibility?: string[];
-  vehicle_year_start?: number;
-  vehicle_year_end?: number;
 }
 
 interface ProductFilter {
@@ -81,9 +78,7 @@ interface ProductFilter {
   sortBy?: 'newest' | 'price_low_high' | 'price_high_low';
   searchQuery?: string;
   brand?: string;
-  modelCompatibility?: string; // For searching within the array
-  vehicleYearStart?: number;
-  vehicleYearEnd?: number;
+
   minStock?: number;
   maxStock?: number;
 }
@@ -121,21 +116,6 @@ export async function filterProducts(filters: ProductFilter) {
   if (filters.brand) {
     query += ` AND LOWER(brand) LIKE $${paramIndex}`;
     params.push(`%${filters.brand.toLowerCase()}%`);
-    paramIndex++;
-  }
-  if (filters.modelCompatibility) {
-    query += ` AND EXISTS (SELECT 1 FROM unnest(model_compatibility) AS model WHERE LOWER(model) LIKE $${paramIndex})`;
-    params.push(`%${filters.modelCompatibility.toLowerCase()}%`);
-    paramIndex++;
-  }
-  if (filters.vehicleYearStart) {
-    query += ` AND vehicle_year_end >= $${paramIndex}`;
-    params.push(filters.vehicleYearStart);
-    paramIndex++;
-  }
-  if (filters.vehicleYearEnd) {
-    query += ` AND vehicle_year_start <= $${paramIndex}`;
-    params.push(filters.vehicleYearEnd);
     paramIndex++;
   }
   if (filters.minStock) {
@@ -205,21 +185,6 @@ export async function getTotalProductCount(filters: ProductFilter) {
   if (filters.brand) {
     query += ` AND LOWER(brand) LIKE $${paramIndex}`;
     params.push(`%${filters.brand.toLowerCase()}%`);
-    paramIndex++;
-  }
-  if (filters.modelCompatibility) {
-    query += ` AND EXISTS (SELECT 1 FROM unnest(model_compatibility) AS model WHERE LOWER(model) LIKE $${paramIndex})`;
-    params.push(`%${filters.modelCompatibility.toLowerCase()}%`);
-    paramIndex++;
-  }
-  if (filters.vehicleYearStart) {
-    query += ` AND vehicle_year_end >= $${paramIndex}`;
-    params.push(filters.vehicleYearStart);
-    paramIndex++;
-  }
-  if (filters.vehicleYearEnd) {
-    query += ` AND vehicle_year_start <= $${paramIndex}`;
-    params.push(filters.vehicleYearEnd);
     paramIndex++;
   }
   if (filters.minStock) {
@@ -543,16 +508,13 @@ export async function createProduct(
   categoryId: number,
   stock: number,
   images: string[],
-  brand?: string,
-  modelCompatibility?: string[],
-  vehicleYearStart?: number,
-  vehicleYearEnd?: number
+  brand?: string
 ) {
   const { rows } = await pool.query(
-    `INSERT INTO products (title, description, price, sku, condition, category_id, stock, images, brand, model_compatibility, vehicle_year_start, vehicle_year_end)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+    `INSERT INTO products (title, description, price, sku, condition, category_id, stock, images, brand)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
      RETURNING *`,
-    [title, description, price, sku, condition, categoryId, stock, images, brand, modelCompatibility, vehicleYearStart, vehicleYearEnd]
+    [title, description, price, sku, condition, categoryId, stock, images, brand]
   );
   return rows[0];
 }
@@ -567,17 +529,14 @@ export async function updateProduct(
   categoryId: number,
   stock: number,
   images: string[],
-  brand?: string,
-  modelCompatibility?: string[],
-  vehicleYearStart?: number,
-  vehicleYearEnd?: number
+  brand?: string
 ) {
   const { rows } = await pool.query(
     `UPDATE products
-     SET title = $1, description = $2, price = $3, sku = $4, condition = $5, category_id = $6, stock = $7, images = $8, brand = $9, model_compatibility = $10, vehicle_year_start = $11, vehicle_year_end = $12
-     WHERE id = $13
+     SET title = $1, description = $2, price = $3, sku = $4, condition = $5, category_id = $6, stock = $7, images = $8, brand = $9
+     WHERE id = $10
      RETURNING *`,
-    [title, description, price, sku, condition, categoryId, stock, images, brand, modelCompatibility, vehicleYearStart, vehicleYearEnd, productId]
+    [title, description, price, sku, condition, categoryId, stock, images, brand, productId]
   );
   return rows[0];
 }
@@ -1153,125 +1112,4 @@ export async function getAllUniqueBrands(): Promise<string[]> {
     `SELECT DISTINCT brand FROM products WHERE brand IS NOT NULL AND brand != '' ORDER BY brand ASC`
   );
   return rows.map(row => row.brand);
-}
-
-export interface Vehicle {
-  id: number;
-  make: string;
-  model: string;
-  year_start: number;
-  year_end: number;
-}
-
-export interface ProductVehicleMap {
-  id: number;
-  product_id: number;
-  vehicle_id: number;
-}
-
-export async function getAllVehicles(): Promise<Vehicle[]> {
-  const { rows } = await pool.query(
-    `SELECT * FROM vehicles ORDER BY make, model, year_start ASC`
-  );
-  return rows;
-}
-
-export async function searchVehicles(make?: string, model?: string, year?: number): Promise<Vehicle[]> {
-  let query = `SELECT * FROM vehicles WHERE 1=1`;
-  const params: any[] = [];
-  let paramIndex = 1;
-
-  if (make) {
-    query += ` AND LOWER(make) LIKE $${paramIndex}`;
-    params.push(`%${make.toLowerCase()}%`);
-    paramIndex++;
-  }
-  if (model) {
-    query += ` AND LOWER(model) LIKE $${paramIndex}`;
-    params.push(`%${model.toLowerCase()}%`);
-    paramIndex++;
-  }
-  if (year) {
-    query += ` AND year_start <= $${paramIndex} AND year_end >= $${paramIndex}`;
-    params.push(year);
-    paramIndex++;
-  }
-
-  query += ` ORDER BY make, model, year_start ASC`;
-
-  const { rows } = await pool.query(query, params);
-  return rows;
-}
-
-export async function mapProductToVehicle(productId: number, vehicleId: number) {
-  const { rows } = await pool.query(
-    `INSERT INTO product_vehicle_map (product_id, vehicle_id)
-     VALUES ($1, $2)
-     ON CONFLICT (product_id, vehicle_id) DO NOTHING
-     RETURNING *`,
-    [productId, vehicleId]
-  );
-  return rows[0];
-}
-
-export async function unmapProductFromVehicle(productId: number, vehicleId: number) {
-  const { rowCount } = await pool.query(
-    `DELETE FROM product_vehicle_map
-     WHERE product_id = $1 AND vehicle_id = $2`,
-    [productId, vehicleId]
-  );
-  return rowCount > 0;
-}
-
-export async function getVehiclesForProduct(productId: number): Promise<Vehicle[]> {
-  const { rows } = await pool.query(
-    `SELECT v.*
-     FROM vehicles v
-     JOIN product_vehicle_map pvm ON v.id = pvm.vehicle_id
-     WHERE pvm.product_id = $1
-     ORDER BY v.make, v.model, v.year_start ASC`,
-    [productId]
-  );
-  return rows;
-}
-
-export async function getProductsForVehicle(vehicleId: number): Promise<Product[]> {
-  const { rows } = await pool.query(
-    `SELECT p.*
-     FROM products p
-     JOIN product_vehicle_map pvm ON p.id = pvm.product_id
-     WHERE pvm.vehicle_id = $1
-     ORDER BY p.title ASC`,
-    [vehicleId]
-  );
-  return rows;
-}
-
-export async function getAllUniqueMakes(): Promise<string[]> {
-  const { rows } = await pool.query(
-    `SELECT DISTINCT make FROM vehicles ORDER BY make ASC`
-  );
-  return rows.map(row => row.make);
-}
-
-export async function getModelsByMake(make: string): Promise<string[]> {
-  const { rows } = await pool.query(
-    `SELECT DISTINCT model FROM vehicles WHERE make = $1 ORDER BY model ASC`,
-    [make]
-  );
-  return rows.map(row => row.model);
-}
-
-export async function getYearsByMakeAndModel(make: string, model: string): Promise<number[]> {
-  const { rows } = await pool.query(
-    `SELECT DISTINCT year_start, year_end FROM vehicles WHERE make = $1 AND model = $2 ORDER BY year_start ASC`,
-    [make, model]
-  );
-  const years: Set<number> = new Set();
-  rows.forEach(row => {
-    for (let year = row.year_start; year <= row.year_end; year++) {
-      years.add(year);
-    }
-  });
-  return Array.from(years).sort((a, b) => a - b);
 }

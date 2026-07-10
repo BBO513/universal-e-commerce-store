@@ -27,9 +27,6 @@ CREATE TABLE products (
     stock INTEGER DEFAULT 0,
     images TEXT[],
     brand TEXT,
-    model_compatibility TEXT[],
-    vehicle_year_start INTEGER,
-    vehicle_year_end INTEGER,
     created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -91,21 +88,6 @@ CREATE TABLE wishlists (
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     product_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
     created_at TIMESTAMP DEFAULT NOW()
-);
-
-CREATE TABLE vehicles (
-    id SERIAL PRIMARY KEY,
-    make TEXT NOT NULL,
-    model TEXT NOT NULL,
-    year_start INTEGER NOT NULL,
-    year_end INTEGER NOT NULL
-);
-
-CREATE TABLE product_vehicle_map (
-    id SERIAL PRIMARY KEY,
-    product_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
-    vehicle_id INTEGER REFERENCES vehicles(id) ON DELETE CASCADE,
-    UNIQUE (product_id, vehicle_id)
 );
 
 -- Indexes for performance optimization

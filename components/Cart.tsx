@@ -4,6 +4,7 @@ import React from 'react';
 import { useCart } from '@/context/CartContext';
 import Link from 'next/link';
 import { FaTrashAlt } from 'react-icons/fa'; // Assuming react-icons is installed
+import FadeAspectImage from './FadeAspectImage';
 
 const Cart: React.FC = () => {
   const { cartItems, updateItem, removeItem, cartTotal, loading } = useCart();
@@ -29,10 +30,12 @@ const Cart: React.FC = () => {
       <div className="space-y-4">
         {cartItems.map((item) => (
           <div key={item.cart_item_id} className="flex items-center border-b pb-4">
-            <img
-              src={item.images[0] || '/placeholder.jpg'} // Use a placeholder if no image
+            <FadeAspectImage
+              src={item.images[0] || '/placeholder.jpg'}
               alt={item.title}
-              className="w-20 h-20 object-cover rounded-md mr-4"
+              aspect="aspect-square"
+              wrapperClassName="w-20 mr-4"
+              className="rounded-2xl"
             />
             <div className="flex-grow">
               <h3 className="font-semibold">{item.title}</h3>

@@ -7,7 +7,6 @@ const pool = new Pool({
 });
 
 const NUM_PRODUCTS = 10000;
-const NUM_VEHICLES = 500;
 
 async function generateMockData() {
   console.log('Starting mock data generation...');
@@ -16,40 +15,20 @@ async function generateMockData() {
   try {
     await client.query('BEGIN');
 
-    // Clear existing products and vehicles to avoid conflicts
-    console.log('Clearing existing product and vehicle data...');
+    // Clear existing products to avoid conflicts
+    console.log('Clearing existing product data...');
     // Clear tables in correct order due to foreign key constraints
     await client.query('DELETE FROM order_items;');
     await client.query('DELETE FROM cart_items;');
     await client.query('DELETE FROM reviews;');
     await client.query('DELETE FROM wishlists;');
-    await client.query('DELETE FROM product_vehicle_map;');
     await client.query('DELETE FROM products;');
-    await client.query('DELETE FROM vehicles;');
     await client.query('DELETE FROM orders;'); // Delete orders before users
     await client.query('DELETE FROM addresses;'); // Delete addresses before users
     await client.query('DELETE FROM users WHERE email NOT IN (\'admin@autoparts.com\', \'customer@example.com\', \'jane@example.com\');'); // Keep seed users
     await client.query('DELETE FROM categories WHERE id > 6;'); // Keep base categories
 
-    // --- Generate Vehicles ---
-    console.log(`Generating ${NUM_VEHICLES} mock vehicles...`);
-    const vehicleMakes = ['Toyota', 'Honda', 'Ford', 'Mazda', 'Nissan', 'Hyundai', 'Kia', 'Subaru', 'Mitsubishi', 'BMW', 'Mercedes-Benz', 'Audi', 'Volkswagen'];
-    const vehicleModels = ['Camry', 'Civic', 'Ranger', 'CX-5', 'Navara', 'i30', 'Cerato', 'Forester', 'Triton', 'X5', 'C-Class', 'A4', 'Golf'];
-    const generatedVehicles = [];
 
-    for (let i = 0; i < NUM_VEHICLES; i++) {
-      const make = faker.helpers.arrayElement(vehicleMakes);
-      const model = faker.helpers.arrayElement(vehicleModels);
-      const yearStart = faker.number.int({ min: 2000, max: 2020 });
-      const yearEnd = faker.number.int({ min: yearStart, max: 2023 });
-
-      const { rows } = await client.query(
-        `INSERT INTO vehicles (make, model, year_start, year_end) VALUES ($1, $2, $3, $4) RETURNING id`,
-        [make, model, yearStart, yearEnd]
-      );
-      generatedVehicles.push({ id: rows[0].id, make, model, yearStart, yearEnd });
-    }
-    console.log('Mock vehicles generated.');
 
     // --- Get existing categories ---
     const { rows: categories } = await client.query('SELECT id, slug FROM categories');
@@ -90,16 +69,9 @@ async function generateMockData() {
       );
       const productId = productRows[0].id;
 
-      // Map product to a few random vehicles
-      const vehiclesToMap = faker.helpers.arrayElements(generatedVehicles, { min: 1, max: 5 });
-      for (const vehicle of vehiclesToMap) {
-        await client.query(
-          `INSERT INTO product_vehicle_map (product_id, vehicle_id) VALUES ($1, $2)`,
-          [productId, vehicle.id]
-        );
-      }
+
     }
-    console.log('Mock products generated and mapped to vehicles.');
+    console.log('Mock products generated.');
 
     await client.query('COMMIT');
     console.log('Mock data generation complete!');

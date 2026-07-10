@@ -1,41 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-// import { mockVehicleMakes } from '@/lib/mockVehicleData'; // Removed mock data import
+import { useState } from 'react';
 
 const SearchPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedMake, setSelectedMake] = useState('');
-  const [makes, setMakes] = useState<string[]>([]);
-  const [loadingMakes, setLoadingMakes] = useState(true);
-  const [makesError, setMakesError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchMakes = async () => {
-      try {
-        setLoadingMakes(true);
-        setMakesError(null);
-        const response = await fetch('/api/vehicles/makes'); // Assuming this API endpoint exists
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        setMakes(data.makes);
-      } catch (error) {
-        console.error("Failed to fetch vehicle makes:", error);
-        setMakesError("Failed to load vehicle makes.");
-      } finally {
-        setLoadingMakes(false);
-      }
-    };
-
-    fetchMakes();
-  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Searching for:', searchTerm, 'with make:', selectedMake);
-    // In a real application, this would trigger a search API call
+    console.log('Searching for:', searchTerm);
   };
 
   return (
@@ -62,32 +34,7 @@ const SearchPage = () => {
 
           {/* Filters */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Make Dropdown */}
-            <div>
-              <label htmlFor="make" className="block text-sm font-medium text-gray-700">
-                Make
-              </label>
-              {loadingMakes ? (
-                <p className="mt-1 text-gray-500">Loading makes...</p>
-              ) : makesError ? (
-                <p className="mt-1 text-red-500">{makesError}</p>
-              ) : (
-                <select
-                  id="make"
-                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-                  value={selectedMake}
-                  onChange={(e) => setSelectedMake(e.target.value)}
-                >
-                  <option value="">All Makes</option>
-                  {makes.map((make) => (
-                    <option key={make} value={make}>
-                      {make}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
-            {/* Add more filters here as needed */}
+            {/* Add filters here as needed */}
           </div>
 
           <button

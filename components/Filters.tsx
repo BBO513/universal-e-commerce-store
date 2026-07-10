@@ -20,9 +20,6 @@ export default function Filters({ initialMinPrice = 0, initialMaxPrice = 1000 }:
   const [condition, setCondition] = useState('');
   const [sortBy, setSortBy] = useState('newest');
   const [brand, setBrand] = useState('');
-  const [modelCompatibility, setModelCompatibility] = useState('');
-  const [vehicleYearStart, setVehicleYearStart] = useState('');
-  const [vehicleYearEnd, setVehicleYearEnd] = useState('');
   const [category, setCategory] = useState('');
 
   const [categories, setCategories] = useState<Category[]>([]);
@@ -61,15 +58,12 @@ export default function Filters({ initialMinPrice = 0, initialMaxPrice = 1000 }:
 
   useEffect(() => {
     // Initialize filters from URL query params on component mount
-    const { minPrice, maxPrice, condition, sortBy, brand, modelCompatibility, vehicleYearStart, vehicleYearEnd, category } = router.query;
+    const { minPrice, maxPrice, condition, sortBy, brand, category } = router.query;
     if (minPrice) setMinPrice(parseFloat(minPrice as string));
     if (maxPrice) setMaxPrice(parseFloat(maxPrice as string));
     if (condition) setCondition(condition as string);
     if (sortBy) setSortBy(sortBy as string);
     if (brand) setBrand(brand as string);
-    if (modelCompatibility) setModelCompatibility(modelCompatibility as string);
-    if (vehicleYearStart) setVehicleYearStart(vehicleYearStart as string);
-    if (vehicleYearEnd) setVehicleYearEnd(vehicleYearEnd as string);
     if (category) setCategory(category as string);
   }, [router.query]);
 
@@ -94,18 +88,6 @@ export default function Filters({ initialMinPrice = 0, initialMaxPrice = 1000 }:
     // Brand
     if (brand) newQuery.brand = brand;
     else delete newQuery.brand;
-
-    // Model Compatibility
-    if (modelCompatibility) newQuery.modelCompatibility = modelCompatibility;
-    else delete newQuery.modelCompatibility;
-
-    // Vehicle Year Start
-    if (vehicleYearStart) newQuery.vehicleYearStart = vehicleYearStart;
-    else delete newQuery.vehicleYearStart;
-
-    // Vehicle Year End
-    if (vehicleYearEnd) newQuery.vehicleYearEnd = vehicleYearEnd;
-    else delete newQuery.vehicleYearEnd;
 
     // Category
     if (category) newQuery.category_id = category; // Use category_id for backend
@@ -154,38 +136,6 @@ export default function Filters({ initialMinPrice = 0, initialMaxPrice = 1000 }:
             </option>
           ))}
         </select>
-      </div>
-
-      <div className="mb-6">
-        <label className="block text-gray-700 text-sm font-bold mb-2">Model Compatibility</label>
-        <input
-          type="text"
-          placeholder="e.g., Civic, Accord (comma-separated)"
-          value={modelCompatibility}
-          onChange={(e)          => setModelCompatibility(e.target.value)}
-          className="w-full p-2 border rounded-md"
-        />
-      </div>
-
-      <div className="mb-6">
-        <label className="block text-gray-700 text-sm font-bold mb-2">Vehicle Year Range</label>
-        <div className="flex items-center space-x-2">
-          <input
-            type="number"
-            placeholder="From"
-            value={vehicleYearStart}
-            onChange={(e) => setVehicleYearStart(e.target.value)}
-            className="w-1/2 p-2 border rounded-md"
-          />
-          <span>-</span>
-          <input
-            type="number"
-            placeholder="To"
-            value={vehicleYearEnd}
-            onChange={(e) => setVehicleYearEnd(e.target.value)}
-            className="w-1/2 p-2 border rounded-md"
-          />
-        </div>
       </div>
 
       <div className="mb-6">

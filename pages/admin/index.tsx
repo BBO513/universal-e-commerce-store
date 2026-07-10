@@ -6,8 +6,8 @@ export default function AdminIndexPage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.push('/admin/dashboard');
+    router.push('/admin/settings');
   }, [router]);
 
-  return null; // This page will redirect, so no content is needed
+  return null;
 }

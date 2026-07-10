@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import Image from 'next/image';
 import { useCart } from '@/context/CartContext';
 import Link from 'next/link';
+import { getProductById } from '@/lib/config';
 
 const ProductDetailPage = () => {
   const params = useParams();
@@ -20,28 +20,18 @@ const ProductDetailPage = () => {
   useEffect(() => {
     if (!productId) return;
 
-    const fetchProduct = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const response = await fetch(`/api/products/${productId}`);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        setProduct(data);
-        if (data.images && data.images.length > 0) {
-          setSelectedImage(data.images[0]);
-        }
-      } catch (err: any) {
-        console.error('Error fetching product:', err);
-        setError(err.message || 'Failed to load product details.');
-      } finally {
-        setLoading(false);
-      }
-    };
+    const foundProduct = getProductById(productId);
+    if (!foundProduct) {
+      setError('Product not found.');
+      setProduct(null);
+      setLoading(false);
+      return;
+    }
 
-    fetchProduct();
+    setProduct(foundProduct);
+    const images = foundProduct.images && foundProduct.images.length > 0 ? foundProduct.images : [foundProduct.image];
+    setSelectedImage(images[0]);
+    setLoading(false);
   }, [productId]);
 
   const handleAddToCart = () => {
@@ -63,36 +53,34 @@ const ProductDetailPage = () => {
     return <div className="container mx-auto px-4 py-8 text-center">Product not found.</div>;
   }
 
+  const productImages = product.images && product.images.length > 0 ? product.images : [product.image];
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Product Images */}
         <div className="flex flex-col items-center">
-          <div className="w-full max-w-lg mb-4 border rounded-lg overflow-hidden">
-            <Image
+          <div className="w-full max-w-lg mb-4 border rounded-lg overflow-hidden bg-slate-100">
+            <img
               src={selectedImage || '/placeholder.jpg'}
               alt={product.title}
-              width={600}
-              height={400}
-              layout="responsive"
-              objectFit="contain"
-              className="rounded-lg"
+              className="h-full w-full object-contain rounded-lg"
             />
           </div>
           <div className="flex space-x-2 overflow-x-auto pb-2">
-            {product.images.map((img: string, index: number) => (
-              <div
+            {productImages.map((img: string, index: number) => (
+              <button
                 key={index}
-                className={`w-20 h-20 relative cursor-pointer border-2 ${selectedImage === img ? 'border-indigo-500' : 'border-gray-200'} rounded-md overflow-hidden`}
+                type="button"
+                className={`w-20 h-20 overflow-hidden rounded-md border-2 ${selectedImage === img ? 'border-indigo-500' : 'border-gray-200'}`}
                 onClick={() => setSelectedImage(img)}
               >
-                <Image
+                <img
                   src={img}
                   alt={`${product.title} thumbnail ${index + 1}`}
-                  layout="fill"
-                  objectFit="cover"
+                  className="h-full w-full object-cover"
                 />
-              </div>
+              </button>
             ))}
           </div>
         </div>
@@ -114,17 +102,6 @@ const ProductDetailPage = () => {
               <span className="font-semibold">Brand:</span> {product.brand}
             </div>
           )}
-          {product.model_compatibility && product.model_compatibility.length > 0 && (
-            <div className="mb-4">
-              <span className="font-semibold">Compatible Models:</span> {product.model_compatibility.join(', ')}
-            </div>
-          )}
-          {product.vehicle_year_start && product.vehicle_year_end && (
-            <div className="mb-4">
-              <span className="font-semibold">Compatible Years:</span> {product.vehicle_year_start} - {product.vehicle_year_end}
-            </div>
-          )}
-
           <div className="mb-4">
             <span className="font-semibold">Stock Status:</span>{' '}
             {product.stock > 0 ? (

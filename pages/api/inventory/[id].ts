@@ -37,9 +37,6 @@ export default async function handler(
         stock,
         images,
         brand,
-        modelCompatibility,
-        vehicleYearStart,
-        vehicleYearEnd,
       } = req.body;
 
       const updatedProduct = await updateProduct(
@@ -52,10 +49,7 @@ export default async function handler(
         categoryId,
         stock,
         images,
-        brand,
-        modelCompatibility,
-        vehicleYearStart,
-        vehicleYearEnd
+        brand
       );
 
       if (updatedProduct) {

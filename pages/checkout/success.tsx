@@ -2,7 +2,7 @@
 import { GetServerSideProps } from 'next';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
-import Image from 'next/image';
+import FadeAspectImage from '../../components/FadeAspectImage';
 import Link from 'next/link';
 import { getSession } from 'next-auth/react';
 
@@ -78,15 +78,13 @@ export default function OrderSuccessPage({ order }: OrderSuccessPageProps) {
         <div className="space-y-4">
           {order.items.map((item) => (
             <div key={item.product_id} className="flex items-center border-b pb-4 last:border-b-0 last:pb-0">
-              <div className="relative w-16 h-16 mr-4 flex-shrink-0">
-                <Image
-                  src={item.images?.[0] || '/placeholder-image.png'}
-                  alt={item.title}
-                  layout="fill"
-                  objectFit="cover"
-                  className="rounded-md"
-                />
-              </div>
+              <FadeAspectImage
+              src={item.images?.[0] || '/placeholder-image.png'}
+              alt={item.title}
+              aspect="aspect-square"
+              wrapperClassName="w-16 flex-shrink-0"
+              className="rounded-2xl"
+            />
               <div className="flex-grow">
                 <p className="font-semibold">{item.title}</p>
                 <p className="text-gray-600 text-sm">Quantity: {item.quantity}</p>

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import Image from 'next/image';
+import { categories, getProductsByCategory } from '@/lib/config';
 
 interface CategoryPageProps {
   params: {
@@ -7,41 +7,62 @@ interface CategoryPageProps {
   };
 }
 
+export function generateStaticParams() {
+  return categories.map((category) => ({ slug: category.slug }));
+}
+
 const CategoryPage = ({ params }: CategoryPageProps) => {
-  const { slug } = params;
+  const products = getProductsByCategory(params.slug);
+  const category = categories.find((item) => item.slug === params.slug);
 
-  // Placeholder data
-  const products = Array.from({ length: 12 }).map((_, i) => ({
-    id: i + 1,
-    name: `Product ${i + 1}`,
-    price: (Math.random() * 100).toFixed(2),
-    imageUrl: `https://via.placeholder.com/300x300.png?text=Product+${i + 1}`,
-  }));
-
-  const categoryName = slug.charAt(0).toUpperCase() + slug.slice(1).replace(/-/g, ' ');
+  if (!category) {
+    return (
+      <div className="min-h-screen bg-slate-950 py-16 text-center text-slate-200">
+        <p className="text-lg font-semibold">Category not found.</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8 text-center">{categoryName}</h1>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-        {products.map((product) => (
-          <Link href={`/product/${product.id}`} key={product.id}>
-            <div className="border rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 cursor-pointer">
-              <div className="relative w-full h-48">
-                <Image
-                  src={product.imageUrl}
-                  alt={product.name}
-                  fill
-                  style={{ objectFit: "cover" }}
+    <div className="min-h-screen bg-slate-950 py-12 text-slate-100">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-sm uppercase tracking-[0.28em] text-cyan-300">{category.name}</p>
+            <h1 className="mt-3 text-4xl font-semibold text-white">{category.name}</h1>
+            <p className="mt-4 max-w-2xl text-slate-400">{category.description}</p>
+          </div>
+          <p className="text-sm text-slate-500">{products.length} product{products.length === 1 ? '' : 's'}</p>
+        </div>
+
+        <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+          {products.map((product) => (
+            <Link
+              key={product.id}
+              href={`/products/${product.id}`}
+              className="group block overflow-hidden rounded-[1.5rem] border border-white/10 bg-slate-900/80 shadow-xl shadow-slate-950/40 transition hover:-translate-y-1 hover:border-cyan-300/30 hover:bg-slate-800/95"
+            >
+              <div className="aspect-[4/3] w-full overflow-hidden bg-slate-700">
+                <img
+                  src={product.image}
+                  alt={product.title}
+                  className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                 />
               </div>
-              <div className="p-4">
-                <h2 className="text-lg font-semibold truncate">{product.name}</h2>
-                <p className="text-gray-600 mt-2">${product.price}</p>
+              <div className="p-6">
+                <span className="inline-flex rounded-full bg-cyan-400/10 px-3 py-1 text-xs uppercase tracking-[0.24em] text-cyan-200">
+                  {product.categoryName}
+                </span>
+                <h2 className="mt-4 text-2xl font-semibold text-white">{product.title}</h2>
+                <p className="mt-3 text-sm leading-6 text-slate-400">{product.description}</p>
+                <div className="mt-6 flex items-center justify-between text-sm text-slate-300">
+                  <span className="font-semibold text-white">${product.price.toFixed(2)}</span>
+                  <span>{product.stock} in stock</span>
+                </div>
               </div>
-            </div>
-          </Link>
-        ))}
+            </Link>
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -2,7 +2,7 @@ import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import { useCart } from '../../context/CartContext';
 import { useCheckout } from '../../context/CheckoutContext';
-import Image from 'next/image';
+import FadeAspectImage from '../../components/FadeAspectImage';
 import { GetServerSideProps } from 'next';
 import { getSession } from 'next-auth/react';
 
@@ -93,15 +93,13 @@ export default function CheckoutReviewPage() {
           <div className="border rounded-lg bg-white shadow-sm">
             {cartItems.map((item) => (
               <div key={item.cart_item_id} className="flex items-center p-4 border-b last:border-b-0">
-                <div className="relative w-20 h-20 mr-4 flex-shrink-0">
-                  <Image
-                    src={item.images?.[0] || '/placeholder-image.png'}
-                    alt={item.title}
-                    layout="fill"
-                    objectFit="cover"
-                    className="rounded-md"
-                  />
-                </div>
+                <FadeAspectImage
+                  src={item.images?.[0] || '/placeholder-image.png'}
+                  alt={item.title}
+                  aspect="aspect-square"
+                  wrapperClassName="w-20 flex-shrink-0"
+                  className="rounded-2xl"
+                />
                 <div className="flex-grow">
                   <p className="font-semibold">{item.title}</p>
                   <p className="text-gray-600 text-sm">Condition: {item.condition}</p>
