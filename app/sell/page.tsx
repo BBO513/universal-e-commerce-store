@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Plus, Home, ShoppingBag, User, Package } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { listItem } from './actions';
 
 const NAV_ITEMS = [
   { id: 'home', icon: Home, label: 'Home', href: '/' },
@@ -13,16 +15,20 @@ const NAV_ITEMS = [
 
 export default function SellPage() {
   const [photo, setPhoto] = useState<string | null>(null);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
   const [price, setPrice] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
+  const [isListing, setIsListing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
 
   const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const url = URL.createObjectURL(file);
       setPhoto(url);
+      setPhotoFile(file);
     }
   };
 
@@ -32,17 +38,37 @@ export default function SellPage() {
     if (file && file.type.startsWith('image/')) {
       const url = URL.createObjectURL(file);
       setPhoto(url);
+      setPhotoFile(file);
     }
   };
 
-  const handleList = () => {
-    setShowSuccess(true);
-    setTimeout(() => {
-      setShowSuccess(false);
-      setPhoto(null);
-      setTitle('');
-      setPrice('');
-    }, 2800);
+  const handleList = async () => {
+    if (!photoFile || !title || !price || isListing) return;
+
+    setIsListing(true);
+
+    const base64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(photoFile);
+    });
+
+    const formData = new FormData();
+    formData.append('photo', base64);
+    formData.append('title', title);
+    formData.append('price', price);
+
+    const result = await listItem(formData);
+
+    setIsListing(false);
+
+    if (result.success) {
+      setShowSuccess(true);
+      setTimeout(() => {
+        router.push('/');
+      }, 2800);
+    }
   };
 
   useEffect(() => {
@@ -88,6 +114,7 @@ export default function SellPage() {
               onClick={(e) => {
                 e.stopPropagation();
                 setPhoto(null);
+                setPhotoFile(null);
                 if (fileInputRef.current) fileInputRef.current.value = '';
               }}
               className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/20 backdrop-blur-xl flex items-center justify-center shadow-lg z-20"
@@ -151,14 +178,16 @@ export default function SellPage() {
         <motion.button
           whileTap={{ scale: 0.97 }}
           onClick={handleList}
-          disabled={!photo && !title && !price}
+          disabled={(!photo && !title && !price) || isListing}
           className={`w-full h-[64px] rounded-t-[20px] text-xl font-bold tracking-wide uppercase transition-all ${
             photo || title || price
-              ? 'bg-white text-black shadow-2xl shadow-black/40'
+              ? isListing
+                ? 'bg-neutral-600 text-neutral-400'
+                : 'bg-white text-black shadow-2xl shadow-black/40'
               : 'bg-neutral-800 text-neutral-500'
           }`}
         >
-          List My Item
+          {isListing ? 'Listing...' : 'List My Item'}
         </motion.button>
       </div>
 
