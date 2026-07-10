@@ -247,7 +247,7 @@ export default function SetupWizardPage() {
 
                 {/* Step 1: Theme Colors */}
                 {step === 1 && (
-                  <div className="space-y-6">
+                  <div className="space-y-8">
                     <div className="flex items-center gap-3">
                       <div
                         className="w-12 h-12 rounded-2xl flex items-center justify-center"
@@ -257,51 +257,52 @@ export default function SetupWizardPage() {
                       </div>
                       <div>
                         <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-                          Pick your palette
+                          Pick a color
                         </h2>
                         <p className="text-slate-500 dark:text-slate-400 text-sm">
-                          Choose an accent color that defines your brand.
+                          Tap the one that feels like you.
                         </p>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-4 gap-3">
-                      {COLOR_PALETTE.map((color) => (
-                        <motion.button
-                          key={color.value}
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => updateField('primaryColor', color.value)}
-                          className={`relative aspect-square rounded-2xl flex flex-col items-center justify-center gap-1 transition-shadow ${
-                            wizardData.primaryColor === color.value
-                              ? 'ring-4 ring-offset-2 ring-offset-white dark:ring-offset-slate-800 shadow-lg'
-                              : 'hover:shadow-md'
-                          }`}
-                          style={{
-                            backgroundColor: color.value,
-                            '--tw-ring-color': color.value,
-                          } as React.CSSProperties}
-                        >
-                          {wizardData.primaryColor === color.value && (
-                            <motion.div
-                              initial={{ scale: 0 }}
-                              animate={{ scale: 1 }}
+                    <div className="overflow-x-auto pb-2 -mx-2 px-2 scrollbar-none">
+                      <div className="flex gap-4 min-w-min">
+                        {COLOR_PALETTE.map((color) => {
+                          const isSelected = wizardData.primaryColor === color.value;
+                          return (
+                            <motion.button
+                              key={color.value}
+                              whileTap={{ scale: 1.15 }}
+                              transition={{ type: 'spring', stiffness: 400, damping: 12 }}
+                              onClick={() => updateField('primaryColor', color.value)}
+                              className={`relative w-14 h-14 rounded-full flex-shrink-0 transition-shadow ${
+                                isSelected
+                                  ? 'ring-[3px] ring-white dark:ring-slate-200 ring-offset-2 ring-offset-white/70 dark:ring-offset-slate-800/70 shadow-lg shadow-black/20'
+                                  : ''
+                              }`}
+                              style={{ backgroundColor: color.value }}
+                              aria-label={color.name}
                             >
-                              <Check className="w-5 h-5 text-white drop-shadow-sm" />
-                            </motion.div>
-                          )}
-                          <span className="text-[10px] font-medium text-white/80">
-                            {color.name}
-                          </span>
-                        </motion.button>
-                      ))}
+                              {isSelected && (
+                                <motion.div
+                                  initial={{ scale: 0 }}
+                                  animate={{ scale: 1 }}
+                                  className="absolute inset-0 flex items-center justify-center"
+                                >
+                                  <Check className="w-5 h-5 text-white drop-shadow-md" />
+                                </motion.div>
+                              )}
+                            </motion.button>
+                          );
+                        })}
+                      </div>
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <span className="text-sm text-slate-500 dark:text-slate-400">Custom hex:</span>
+                      <span className="text-sm text-slate-500 dark:text-slate-400">Custom:</span>
                       <div className="flex items-center gap-2">
                         <div
-                          className="w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700"
+                          className="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700"
                           style={{ backgroundColor: wizardData.primaryColor }}
                         />
                         <input
@@ -313,21 +314,21 @@ export default function SetupWizardPage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="flex gap-3">
                       <div
-                        className="p-4 rounded-xl text-sm font-semibold text-center transition-colors"
+                        className="flex-1 p-4 rounded-xl text-sm font-semibold text-center"
                         style={{ backgroundColor: wizardData.primaryColor, color: '#fff' }}
                       >
                         Primary
                       </div>
                       <div
-                        className="p-4 rounded-xl text-sm font-semibold text-center transition-colors"
+                        className="flex-1 p-4 rounded-xl text-sm font-semibold text-center"
                         style={{ backgroundColor: wizardData.primaryColor + '20', color: wizardData.primaryColor }}
                       >
                         Soft
                       </div>
                       <div
-                        className="p-4 rounded-xl text-sm font-semibold text-center transition-colors border"
+                        className="flex-1 p-4 rounded-xl text-sm font-semibold text-center border"
                         style={{ borderColor: wizardData.primaryColor + '40', color: wizardData.primaryColor }}
                       >
                         Outline

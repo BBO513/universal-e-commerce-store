@@ -111,4 +111,13 @@ img {
   .hero-shell {
     @apply max-w-6xl mx-auto px-4 py-16 md:py-24;
   }
+
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
 }
