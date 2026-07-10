@@ -8,7 +8,7 @@ export default function CategoriesPage() {
         <header className="text-center mb-12">
           <p className="text-sm uppercase tracking-[0.28em] text-cyan-300">Product categories</p>
           <h1 className="mt-4 text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-            Browse curated collections
+            Browse all categories
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-base text-slate-300">
             Explore every category powered directly from the storefront configuration.

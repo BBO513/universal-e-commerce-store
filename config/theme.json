@@ -1,8 +1,8 @@
 {
   "storeName": "Universal E-Commerce Engine",
   "shortName": "UEE",
-  "tagline": "Plug-and-play storefronts for premium brands",
-  "heroHeading": "A premium store experience that launches from one JSON file.",
+  "tagline": "Plug-and-play storefronts for any brand",
+  "heroHeading": "A store experience that launches from one JSON file.",
   "heroSubheading": "Edit your inventory and branding in config/products.json and config/theme.json — zero code required.",
   "heroCtaPrimary": "Browse Catalog",
   "heroCtaSecondary": "Explore Categories",

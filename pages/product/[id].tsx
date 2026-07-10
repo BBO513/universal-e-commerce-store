@@ -159,9 +159,9 @@ export default function ProductDetailPage({ product, category, averageRating, re
     return <div className="text-center py-8">Product not found.</div>;
   }
 
-  const pageTitle = `${product.title} - ${category ? category.name : 'Auto Parts'} | Australian Automotive Parts Store`;
+  const pageTitle = `${product.title} - ${category ? category.name : 'Store'}`;
   const pageDescription = product.description.substring(0, 160); // Truncate for meta description
-  const pageKeywords = `${product.title}, ${category ? category.name : ''}, ${product.brand}, auto parts, car parts, automotive, Australia`;
+  const pageKeywords = `${product.title}, ${category ? category.name : ''}, ${product.brand}`;
   const canonicalUrl = `https://www.yourdomain.com/product/${product.id}`; // TODO: Replace with actual domain
   const ogImage = product.images?.[0] || '/og-image.jpg'; // Use first product image or a fallback
 

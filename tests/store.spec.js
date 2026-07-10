@@ -2,7 +2,7 @@ const { test, expect } = require('@playwright/test');
 
 test('store loads and can add a product to cart', async ({ page }) => {
   await page.goto('/');
-  await expect(page).toHaveTitle(/AutoStore|Automotive|Store/i);
+  await expect(page).toHaveTitle(/Store/i);
 
   // Ensure the homepage loads and the product grid exists
   const productCard = page.locator('a[href*="/product/"] .group');

@@ -1,7 +1,7 @@
 {
-  "name": "Australian Automotive Parts Store",
-  "short_name": "AutoParts",
-  "description": "Your one-stop shop for automotive parts in Australia.",
+  "name": "Universal Store",
+  "short_name": "Store",
+  "description": "Your online store for high-quality products.",
   "icons": [
     {
       "src": "/icons/icon-192x192.png",

@@ -9,17 +9,8 @@ export default function Footer() {
           <Link href="/about" className="transition-colors hover:text-white">
             About
           </Link>
-          <Link href="/contact" className="transition-colors hover:text-white">
-            Contact
-          </Link>
-          <Link href="/terms" className="transition-colors hover:text-white">
-            Terms
-          </Link>
-          <Link href="/privacy" className="transition-colors hover:text-white">
-            Privacy
-          </Link>
         </div>
-        <p className="mt-4 text-sm text-slate-500">&copy; {new Date().getFullYear()} AutoStore. All rights reserved.</p>
+        <p className="mt-4 text-sm text-slate-500">&copy; {new Date().getFullYear()} My Store. All rights reserved.</p>
       </div>
     </footer>
   );

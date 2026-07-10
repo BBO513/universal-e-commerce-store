@@ -47,7 +47,7 @@ const industryTemplates: Record<string, typeof genericStorefrontTemplate> = {
   Fashion: {
     hero: {
       headline: 'Launch your fashion storefront today.',
-      subheadline: 'Present curated apparel and accessories with a polished, customer-first design.',
+      subheadline: 'Present your apparel and accessories with a polished, customer-first design.',
     },
     products: [
       {

@@ -116,9 +116,9 @@ export default function CategoryPage({
     return <div className="text-center py-8">Category not found.</div>;
   }
 
-  const pageTitle = `${category.name} - Auto Parts | Australian Automotive Parts Store`;
-  const pageDescription = category.description || `Browse ${category.name} auto parts for sale in Australia. Find high-quality ${category.name} components for your vehicle.`;
-  const pageKeywords = `${category.name}, auto parts, car parts, automotive, Australia, ${category.slug}`;
+  const pageTitle = category.name;
+  const pageDescription = category.description || `Browse ${category.name} products in our store.`;
+  const pageKeywords = `${category.name}, ${category.slug}`;
   const canonicalUrl = `https://www.yourdomain.com/category/${category.slug}`; // TODO: Replace with actual domain
   const ogImage = "/og-image.jpg"; // Placeholder for Open Graph image
 

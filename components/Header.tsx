@@ -46,7 +46,7 @@ export default function Header() {
       <div className="container mx-auto flex justify-between items-center">
         <div className="text-2xl font-bold min-h-[44px] flex items-center"> {/* Added min-h and flex for tap target */}
           <Link href="/" className="px-2 py-1 rounded-md hover:bg-gray-700 transition-colors">
-            AutoStore
+            My Store
           </Link>
         </div>
         <div className="flex-grow mx-4">

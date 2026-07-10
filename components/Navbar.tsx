@@ -34,7 +34,7 @@ const Navbar = () => {
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center h-20">
           <Link href="/" className="text-2xl font-semibold tracking-tight text-slate-950 transition-colors hover:text-boutique-accent">
-            AutoStore
+            My Store
           </Link>
 
           <div className="hidden md:flex items-center gap-6 text-sm font-medium">
