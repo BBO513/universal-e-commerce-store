@@ -27,6 +27,8 @@ CREATE TABLE products (
     stock INTEGER DEFAULT 0,
     images TEXT[],
     brand TEXT,
+    variants JSONB DEFAULT '[]',
+    attributes JSONB DEFAULT '{}',
     created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -97,3 +99,17 @@ CREATE INDEX idx_products_title ON products (title);
 CREATE INDEX idx_products_category_id ON products (category_id);
 CREATE INDEX idx_orders_user_id ON orders (user_id);
 CREATE INDEX idx_cart_items_user_id ON cart_items (user_id);
+
+CREATE TABLE store_settings (
+    id SERIAL PRIMARY KEY,
+    store_name TEXT NOT NULL DEFAULT 'My Store',
+    logo_url TEXT,
+    primary_color TEXT DEFAULT '#0F4B5F',
+    currency TEXT DEFAULT 'AUD',
+    social_links JSONB DEFAULT '{}',
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Seed default store settings row
+INSERT INTO store_settings (store_name) VALUES ('My Store') ON CONFLICT DO NOTHING;

@@ -10,6 +10,8 @@ export interface Product {
   images?: string[];
   sku?: string;
   brand?: string;
+  variants?: any;
+  attributes?: any;
   categorySlug: string;
   categoryName: string;
   stock: number;

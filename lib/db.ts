@@ -66,6 +66,8 @@ export interface Product {
   images: string[];
   created_at: string;
   brand?: string;
+  variants?: any;
+  attributes?: any;
 }
 
 interface ProductFilter {
@@ -508,13 +510,15 @@ export async function createProduct(
   categoryId: number,
   stock: number,
   images: string[],
-  brand?: string
+  brand?: string,
+  variants?: any,
+  attributes?: any
 ) {
   const { rows } = await pool.query(
-    `INSERT INTO products (title, description, price, sku, condition, category_id, stock, images, brand)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    `INSERT INTO products (title, description, price, sku, condition, category_id, stock, images, brand, variants, attributes)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
      RETURNING *`,
-    [title, description, price, sku, condition, categoryId, stock, images, brand]
+    [title, description, price, sku, condition, categoryId, stock, images, brand, JSON.stringify(variants || []), JSON.stringify(attributes || {})]
   );
   return rows[0];
 }
@@ -529,14 +533,16 @@ export async function updateProduct(
   categoryId: number,
   stock: number,
   images: string[],
-  brand?: string
+  brand?: string,
+  variants?: any,
+  attributes?: any
 ) {
   const { rows } = await pool.query(
     `UPDATE products
-     SET title = $1, description = $2, price = $3, sku = $4, condition = $5, category_id = $6, stock = $7, images = $8, brand = $9
-     WHERE id = $10
+     SET title = $1, description = $2, price = $3, sku = $4, condition = $5, category_id = $6, stock = $7, images = $8, brand = $9, variants = $10, attributes = $11
+     WHERE id = $12
      RETURNING *`,
-    [title, description, price, sku, condition, categoryId, stock, images, brand, productId]
+    [title, description, price, sku, condition, categoryId, stock, images, brand, JSON.stringify(variants || []), JSON.stringify(attributes || {}), productId]
   );
   return rows[0];
 }
@@ -1112,4 +1118,42 @@ export async function getAllUniqueBrands(): Promise<string[]> {
     `SELECT DISTINCT brand FROM products WHERE brand IS NOT NULL AND brand != '' ORDER BY brand ASC`
   );
   return rows.map(row => row.brand);
+}
+
+export interface StoreSettings {
+  id: number;
+  store_name: string;
+  logo_url: string | null;
+  primary_color: string;
+  currency: string;
+  social_links: Record<string, string>;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function getStoreSettings(): Promise<StoreSettings> {
+  const { rows } = await pool.query(
+    `SELECT * FROM store_settings LIMIT 1`
+  );
+  return rows[0] || null;
+}
+
+export async function updateStoreSettings(settings: Partial<StoreSettings>): Promise<StoreSettings> {
+  const setClauses: string[] = [];
+  const params: any[] = [];
+  let paramIndex = 1;
+
+  if (settings.store_name !== undefined) { setClauses.push(`store_name = $${paramIndex}`); params.push(settings.store_name); paramIndex++; }
+  if (settings.logo_url !== undefined) { setClauses.push(`logo_url = $${paramIndex}`); params.push(settings.logo_url); paramIndex++; }
+  if (settings.primary_color !== undefined) { setClauses.push(`primary_color = $${paramIndex}`); params.push(settings.primary_color); paramIndex++; }
+  if (settings.currency !== undefined) { setClauses.push(`currency = $${paramIndex}`); params.push(settings.currency); paramIndex++; }
+  if (settings.social_links !== undefined) { setClauses.push(`social_links = $${paramIndex}`); params.push(JSON.stringify(settings.social_links)); paramIndex++; }
+
+  setClauses.push(`updated_at = NOW()`);
+
+  const { rows } = await pool.query(
+    `UPDATE store_settings SET ${setClauses.join(', ')} WHERE id = (SELECT id FROM store_settings LIMIT 1) RETURNING *`,
+    params
+  );
+  return rows[0];
 }
