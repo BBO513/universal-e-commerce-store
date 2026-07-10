@@ -6,7 +6,7 @@ const nextConfig = {
   swcMinify: true, // Enable SWC minification for production
   i18n,
   images: {
-    domains: ['your-image-domain.com', 'another-image-domain.com', 'via.placeholder.com'], // TODO: Replace with your actual image domains (e.g., Cloudinary, S3, etc.)
+    domains: [], // Add your image hostnames here (e.g., 'res.cloudinary.com')
   },
 };
 

@@ -34,7 +34,8 @@ CREATE TABLE cart_items (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id) NOT NULL,
     product_id INTEGER REFERENCES products(id) NOT NULL,
-    quantity INTEGER NOT NULL DEFAULT 1
+    quantity INTEGER NOT NULL DEFAULT 1,
+    UNIQUE (user_id, product_id)
 );
 
 CREATE TABLE orders (
@@ -78,9 +79,10 @@ CREATE TABLE reviews (
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     product_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
     rating INTEGER CHECK (rating BETWEEN 1 AND 5) NOT NULL,
+    title TEXT,
     comment TEXT,
     created_at TIMESTAMP DEFAULT NOW(),
-    approved BOOLEAN DEFAULT FALSE
+    is_approved BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE wishlists (

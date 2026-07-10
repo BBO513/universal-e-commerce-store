@@ -68,11 +68,11 @@ INSERT INTO addresses (user_id, type, street, city, state, postcode, is_default)
 (3, 'shipping', '456 Queen Street', 'Melbourne', 'VIC', '3000', true);
 
 -- Insert sample reviews
-INSERT INTO reviews (user_id, product_id, rating, comment, approved) VALUES
-(2, 1, 5, 'Great quality oil filter. Fits perfectly and good value for money.', true),
-(3, 5, 4, 'Good brake pads, very quiet operation. Slight dust but acceptable.', true),
-(2, 9, 5, 'Excellent spark plugs. Engine runs smoother and better fuel economy.', true),
-(3, 13, 5, 'Battery works perfectly. Easy to install and great warranty.', true);
+INSERT INTO reviews (user_id, product_id, rating, title, comment, is_approved) VALUES
+(2, 1, 5, 'Great filter', 'Great quality oil filter. Fits perfectly and good value for money.', true),
+(3, 5, 4, 'Good pads', 'Good brake pads, very quiet operation. Slight dust but acceptable.', true),
+(2, 9, 5, 'Excellent plugs', 'Excellent spark plugs. Engine runs smoother and better fuel economy.', true),
+(3, 13, 5, 'Solid battery', 'Battery works perfectly. Easy to install and great warranty.', true);
 
 -- Insert sample orders
 INSERT INTO orders (user_id, total, status, stripe_payment_id, created_at) VALUES
