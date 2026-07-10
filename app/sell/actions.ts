@@ -1,11 +1,8 @@
 'use server';
 
-import { createProduct, getAllCategories } from '@/lib/db';
-import { Pool } from 'pg';
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
+import { createProduct, getAllCategories, isDemoMode } from '@/lib/db';
+import { getCookiePayload } from '@/lib/demo-store';
+import { cookies } from 'next/headers';
 
 export async function listItem(formData: FormData): Promise<{ success: boolean; error?: string }> {
   try {
@@ -18,18 +15,8 @@ export async function listItem(formData: FormData): Promise<{ success: boolean; 
       return { success: false, error: 'Missing required fields' };
     }
 
-    let categories = await getAllCategories();
-    let categoryId: number;
-
-    if (categories.length > 0) {
-      categoryId = categories[0].id;
-    } else {
-      const { rows } = await pool.query(
-        `INSERT INTO categories (name, slug, description) VALUES ($1, $2, $3) RETURNING id`,
-        ['Handmade', 'handmade', 'Handmade items from our community']
-      );
-      categoryId = rows[0].id;
-    }
+    const categories = await getAllCategories();
+    const categoryId = categories.length > 0 ? categories[0].id : 1;
 
     const sku = 'SKU-' + Math.random().toString(36).substring(2, 10).toUpperCase();
 
@@ -46,6 +33,17 @@ export async function listItem(formData: FormData): Promise<{ success: boolean; 
       [],
       {}
     );
+
+    if (isDemoMode()) {
+      const cookieStore = cookies();
+      cookieStore.set('demo_data', getCookiePayload(), {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 60 * 60 * 24 * 365,
+      });
+    }
 
     return { success: true };
   } catch (error: any) {

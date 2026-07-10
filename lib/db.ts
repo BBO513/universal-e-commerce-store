@@ -1,12 +1,53 @@
 import { Pool } from 'pg';
-import bcrypt from 'bcrypt'; // Assuming bcrypt is installed
+import bcrypt from 'bcrypt';
+import {
+  getDemoSettings,
+  updateDemoSettings,
+  getDemoProducts,
+  addDemoProduct,
+  getDemoCategories,
+} from './demo-store';
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
+let pool: Pool | null = null;
+let demoMode = false;
+
+function getPool(): Pool | null {
+  if (demoMode) return null;
+  if (pool) return pool;
+  if (!process.env.DATABASE_URL) {
+    demoMode = true;
+    return null;
+  }
+  pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  return pool;
+}
+
+export function isDemoMode() {
+  return demoMode;
+}
+
+async function safeQuery(text: string, params?: any[]): Promise<any> {
+  const p = getPool();
+  if (!p) throw new Error('DEMO_MODE');
+  try {
+    return await p.query(text, params);
+  } catch (err: any) {
+    if (
+      err.code === 'ECONNREFUSED' ||
+      err.code === 'ENOTFOUND' ||
+      err.code === 'ETIMEDOUT' ||
+      err.code === 'ECONNRESET' ||
+      err.message?.includes('DEMO_MODE')
+    ) {
+      demoMode = true;
+      throw new Error('DEMO_MODE');
+    }
+    throw err;
+  }
+}
 
 export async function getUserByEmail(email: string) {
-  const { rows } = await pool.query(
+  const { rows } = await safeQuery(
     `SELECT id, email, name, role, password_hash FROM users WHERE email = $1`,
     [email]
   );
@@ -14,32 +55,42 @@ export async function getUserByEmail(email: string) {
 }
 
 export async function getAllCategories() {
-  const { rows } = await pool.query('SELECT * FROM categories ORDER BY name ASC');
-  return rows;
+  try {
+    const { rows } = await safeQuery('SELECT * FROM categories ORDER BY name ASC');
+    return rows;
+  } catch (err: any) {
+    if (err.message === 'DEMO_MODE') return getDemoCategories();
+    throw err;
+  }
 }
 
 export async function getCategoryBySlug(slug: string) {
-  const { rows } = await pool.query('SELECT * FROM categories WHERE slug = $1', [slug]);
+  const { rows } = await safeQuery('SELECT * FROM categories WHERE slug = $1', [slug]);
   return rows[0];
 }
 
 export async function getCategoryById(id: number) {
-  const { rows } = await pool.query('SELECT * FROM categories WHERE id = $1', [id]);
+  const { rows } = await safeQuery('SELECT * FROM categories WHERE id = $1', [id]);
   return rows[0];
 }
 
 export async function getChildCategories(parentId: number) {
-  const { rows } = await pool.query('SELECT * FROM categories WHERE parent_id = $1 ORDER BY name ASC', [parentId]);
+  const { rows } = await safeQuery('SELECT * FROM categories WHERE parent_id = $1 ORDER BY name ASC', [parentId]);
   return rows;
 }
 
 export async function getProducts() {
-  const { rows } = await pool.query('SELECT * FROM products ORDER BY created_at DESC');
-  return rows;
+  try {
+    const { rows } = await safeQuery('SELECT * FROM products ORDER BY created_at DESC');
+    return rows;
+  } catch (err: any) {
+    if (err.message === 'DEMO_MODE') return getDemoProducts();
+    throw err;
+  }
 }
 
 export async function getProductsByCategory(categorySlug: string) {
-  const { rows } = await pool.query(
+  const { rows } = await safeQuery(
     `SELECT p.* FROM products p
      JOIN categories c ON p.category_id = c.id
      WHERE c.slug = $1
@@ -50,8 +101,15 @@ export async function getProductsByCategory(categorySlug: string) {
 }
 
 export async function getProductById(id: string) {
-  const { rows } = await pool.query('SELECT * FROM products WHERE id = $1', [parseInt(id, 10)]);
-  return rows[0];
+  try {
+    const { rows } = await safeQuery('SELECT * FROM products WHERE id = $1', [parseInt(id, 10)]);
+    return rows[0];
+  } catch (err: any) {
+    if (err.message === 'DEMO_MODE') {
+      return getDemoProducts().find((p: any) => String(p.id) === id) || null;
+    }
+    throw err;
+  }
 }
 
 export interface Product {
@@ -150,7 +208,7 @@ export async function filterProducts(filters: ProductFilter) {
   query += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
   params.push(limit, offset);
 
-  const { rows } = await pool.query(query, params);
+  const { rows } = await safeQuery(query, params);
   return rows;
 }
 
@@ -200,13 +258,13 @@ export async function getTotalProductCount(filters: ProductFilter) {
     paramIndex++;
   }
 
-  const { rows } = await pool.query(query, params);
+  const { rows } = await safeQuery(query, params);
   return parseInt(rows[0].count, 10);
 }
 
 // Cart methods
 export async function getCartItems(userId: number) {
-  const { rows } = await pool.query(
+  const { rows } = await safeQuery(
     `SELECT ci.id as cart_item_id, ci.quantity, p.*
      FROM cart_items ci
      JOIN products p ON ci.product_id = p.id
@@ -218,7 +276,7 @@ export async function getCartItems(userId: number) {
 }
 
 export async function addToCart(userId: number, productId: number, quantity: number) {
-  const { rows } = await pool.query(
+  const { rows } = await safeQuery(
     `INSERT INTO cart_items (user_id, product_id, quantity)
      VALUES ($1, $2, $3)
      ON CONFLICT (user_id, product_id) DO UPDATE SET quantity = cart_items.quantity + $3
@@ -229,7 +287,7 @@ export async function addToCart(userId: number, productId: number, quantity: num
 }
 
 export async function updateCartQuantity(cartItemId: number, quantity: number) {
-  const { rows } = await pool.query(
+  const { rows } = await safeQuery(
     `UPDATE cart_items
      SET quantity = $1
      WHERE id = $2
@@ -240,7 +298,7 @@ export async function updateCartQuantity(cartItemId: number, quantity: number) {
 }
 
 export async function removeCartItem(cartItemId: number) {
-  const { rowCount } = await pool.query(
+  const { rowCount } = await safeQuery(
     `DELETE FROM cart_items
      WHERE id = $1`,
     [cartItemId]
@@ -249,7 +307,7 @@ export async function removeCartItem(cartItemId: number) {
 }
 
 export async function clearCart(userId: number) {
-  const { rowCount } = await pool.query(
+  const { rowCount } = await safeQuery(
     `DELETE FROM cart_items
      WHERE user_id = $1`,
     [userId]
@@ -259,7 +317,7 @@ export async function clearCart(userId: number) {
 
 // Address methods
 export async function getAddresses(userId: number) {
-  const { rows } = await pool.query(
+  const { rows } = await safeQuery(
     `SELECT * FROM addresses
      WHERE user_id = $1
      ORDER BY is_default DESC, id ASC`,
@@ -278,9 +336,9 @@ export async function addAddress(
   isDefault: boolean
 ) {
   if (isDefault) {
-    await pool.query(`UPDATE addresses SET is_default = FALSE WHERE user_id = $1`, [userId]);
+    await safeQuery(`UPDATE addresses SET is_default = FALSE WHERE user_id = $1`, [userId]);
   }
-  const { rows } = await pool.query(
+  const { rows } = await safeQuery(
     `INSERT INTO addresses (user_id, type, street, city, state, postcode, is_default)
      VALUES ($1, $2, $3, $4, $5, $6, $7)
      RETURNING *`,
@@ -300,9 +358,9 @@ export async function updateAddress(
   isDefault: boolean
 ) {
   if (isDefault) {
-    await pool.query(`UPDATE addresses SET is_default = FALSE WHERE user_id = $1`, [userId]);
+    await safeQuery(`UPDATE addresses SET is_default = FALSE WHERE user_id = $1`, [userId]);
   }
-  const { rows } = await pool.query(
+  const { rows } = await safeQuery(
     `UPDATE addresses
      SET type = $1, street = $2, city = $3, state = $4, postcode = $5, is_default = $6
      WHERE id = $7 AND user_id = $8
@@ -313,7 +371,7 @@ export async function updateAddress(
 }
 
 export async function deleteAddress(addressId: number, userId: number) {
-  const { rowCount } = await pool.query(
+  const { rowCount } = await safeQuery(
     `DELETE FROM addresses
      WHERE id = $1 AND user_id = $2`,
     [addressId, userId]
@@ -322,8 +380,8 @@ export async function deleteAddress(addressId: number, userId: number) {
 }
 
 export async function setDefaultAddress(userId: number, addressId: number) {
-  await pool.query(`UPDATE addresses SET is_default = FALSE WHERE user_id = $1`, [userId]);
-  const { rows } = await pool.query(
+  await safeQuery(`UPDATE addresses SET is_default = FALSE WHERE user_id = $1`, [userId]);
+  const { rows } = await safeQuery(
     `UPDATE addresses
      SET is_default = TRUE
      WHERE id = $1 AND user_id = $2
@@ -340,7 +398,7 @@ export async function createOrder(
   status: string,
   stripePaymentId: string | null
 ) {
-  const { rows } = await pool.query(
+  const { rows } = await safeQuery(
     `INSERT INTO orders (user_id, total, status, stripe_payment_id)
      VALUES ($1, $2, $3, $4)
      RETURNING *`,
@@ -356,7 +414,9 @@ interface OrderItemData {
 }
 
 export async function addOrderItems(orderId: number, items: OrderItemData[]) {
-  const client = await pool.connect();
+  const p = getPool();
+  if (!p) throw new Error('Database unavailable in demo mode');
+  const client = await p.connect();
   try {
     await client.query('BEGIN');
     const values = items.map(item => `(${orderId}, ${item.productId}, ${item.quantity}, ${item.priceAtPurchase})`).join(',');
@@ -373,7 +433,7 @@ export async function addOrderItems(orderId: number, items: OrderItemData[]) {
 }
 
 export async function updateOrderStatus(orderId: number, status: string) {
-  const { rows } = await pool.query(
+  const { rows } = await safeQuery(
     `UPDATE orders
      SET status = $1
      WHERE id = $2
@@ -384,7 +444,7 @@ export async function updateOrderStatus(orderId: number, status: string) {
 }
 
 export async function getOrderById(orderId: number) {
-  const { rows: orderRows } = await pool.query(
+  const { rows: orderRows } = await safeQuery(
     `SELECT
         o.id,
         o.user_id,
@@ -410,7 +470,7 @@ export async function getOrderById(orderId: number) {
     return null;
   }
 
-  const { rows: itemRows } = await pool.query(
+  const { rows: itemRows } = await safeQuery(
     `SELECT oi.*, p.title, p.images, p.condition
      FROM order_items oi
      JOIN products p ON oi.product_id = p.id
@@ -431,7 +491,7 @@ export async function getOrderById(orderId: number) {
 }
 
 export async function getUserRole(userId: number) {
-  const { rows } = await pool.query(
+  const { rows } = await safeQuery(
     `SELECT role FROM users WHERE id = $1`,
     [userId]
   );
@@ -448,10 +508,10 @@ export async function getDashboardMetrics() {
     totalCustomersResult,
     lowStockCountResult,
   ] = await Promise.all([
-    pool.query(`SELECT COALESCE(SUM(total), 0) FROM orders WHERE created_at >= $1 AND status = 'paid'`, [thirtyDaysAgo]),
-    pool.query(`SELECT COUNT(*) FROM orders WHERE created_at >= $1 AND status = 'paid'`, [thirtyDaysAgo]),
-    pool.query(`SELECT COUNT(DISTINCT user_id) FROM orders WHERE created_at >= $1 AND status = 'paid'`, [thirtyDaysAgo]),
-    pool.query(`SELECT COUNT(*) FROM products WHERE stock < 10 AND stock > 0`),
+    safeQuery(`SELECT COALESCE(SUM(total), 0) FROM orders WHERE created_at >= $1 AND status = 'paid'`, [thirtyDaysAgo]),
+    safeQuery(`SELECT COUNT(*) FROM orders WHERE created_at >= $1 AND status = 'paid'`, [thirtyDaysAgo]),
+    safeQuery(`SELECT COUNT(DISTINCT user_id) FROM orders WHERE created_at >= $1 AND status = 'paid'`, [thirtyDaysAgo]),
+    safeQuery(`SELECT COUNT(*) FROM products WHERE stock < 10 AND stock > 0`),
   ]);
 
   return {
@@ -466,7 +526,7 @@ export async function getRevenueByDay() {
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-  const { rows } = await pool.query(
+  const { rows } = await safeQuery(
     `SELECT DATE(created_at) as date, COALESCE(SUM(total), 0) as revenue
      FROM orders
      WHERE created_at >= $1 AND status = 'paid'
@@ -481,7 +541,7 @@ export async function getOrdersByDay() {
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-  const { rows } = await pool.query(
+  const { rows } = await safeQuery(
     `SELECT DATE(created_at) as date, COUNT(*) as orders_count
      FROM orders
      WHERE created_at >= $1 AND status = 'paid'
@@ -493,7 +553,7 @@ export async function getOrdersByDay() {
 }
 
 export async function deleteProduct(productId: number) {
-  const { rowCount } = await pool.query(
+  const { rowCount } = await safeQuery(
     `DELETE FROM products
      WHERE id = $1`,
     [productId]
@@ -514,13 +574,20 @@ export async function createProduct(
   variants?: any,
   attributes?: any
 ) {
-  const { rows } = await pool.query(
-    `INSERT INTO products (title, description, price, sku, condition, category_id, stock, images, brand, variants, attributes)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-     RETURNING *`,
-    [title, description, price, sku, condition, categoryId, stock, images, brand, JSON.stringify(variants || []), JSON.stringify(attributes || {})]
-  );
-  return rows[0];
+  try {
+    const { rows } = await safeQuery(
+      `INSERT INTO products (title, description, price, sku, condition, category_id, stock, images, brand, variants, attributes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+       RETURNING *`,
+      [title, description, price, sku, condition, categoryId, stock, images, brand, JSON.stringify(variants || []), JSON.stringify(attributes || {})]
+    );
+    return rows[0];
+  } catch (err: any) {
+    if (err.message === 'DEMO_MODE') {
+      return addDemoProduct({ title, description, price, sku, condition, category_id: categoryId, stock, images, brand: brand || null, category_name: 'Handmade' });
+    }
+    throw err;
+  }
 }
 
 export async function updateProduct(
@@ -537,7 +604,7 @@ export async function updateProduct(
   variants?: any,
   attributes?: any
 ) {
-  const { rows } = await pool.query(
+  const { rows } = await safeQuery(
     `UPDATE products
      SET title = $1, description = $2, price = $3, sku = $4, condition = $5, category_id = $6, stock = $7, images = $8, brand = $9, variants = $10, attributes = $11
      WHERE id = $12
@@ -548,7 +615,7 @@ export async function updateProduct(
 }
 
 export async function deleteManyProducts(productIds: number[]) {
-  const { rowCount } = await pool.query(
+  const { rowCount } = await safeQuery(
     `DELETE FROM products
      WHERE id = ANY($1::int[])`,
     [productIds]
@@ -557,7 +624,7 @@ export async function deleteManyProducts(productIds: number[]) {
 }
 
 export async function updateStockManyProducts(productIds: number[], stockChange: number) {
-  const { rowCount } = await pool.query(
+  const { rowCount } = await safeQuery(
     `UPDATE products
      SET stock = stock + $1
      WHERE id = ANY($2::int[])
@@ -568,7 +635,7 @@ export async function updateStockManyProducts(productIds: number[], stockChange:
 }
 
 export async function updateConditionManyProducts(productIds: number[], condition: 'new' | 'used') {
-  const { rowCount } = await pool.query(
+  const { rowCount } = await safeQuery(
     `UPDATE products
      SET condition = $1
      WHERE id = ANY($2::int[])
@@ -579,14 +646,16 @@ export async function updateConditionManyProducts(productIds: number[], conditio
 }
 
 export async function getProductsWithInventory() {
-  const { rows } = await pool.query(
+  const { rows } = await safeQuery(
     `SELECT id, sku, title, stock FROM products ORDER BY title ASC`
   );
   return rows;
 }
 
 export async function updateProductStock(productId: number, change: number, reason: string) {
-  const client = await pool.connect();
+  const p = getPool();
+  if (!p) throw new Error('Database unavailable in demo mode');
+  const client = await p.connect();
   try {
     await client.query('BEGIN');
 
@@ -619,7 +688,7 @@ export async function updateProductStock(productId: number, change: number, reas
 }
 
 export async function getInventoryHistory(productId: number) {
-  const { rows } = await pool.query(
+  const { rows } = await safeQuery(
     `SELECT ih.*, p.title as product_title, p.sku
      FROM inventory_history ih
      JOIN products p ON ih.product_id = p.id
@@ -631,7 +700,7 @@ export async function getInventoryHistory(productId: number) {
 }
 
 export async function getAllUsersWithOrderCount() {
-  const { rows } = await pool.query(
+  const { rows } = await safeQuery(
     `SELECT
         u.id,
         u.name,
@@ -649,7 +718,7 @@ export async function getAllUsersWithOrderCount() {
 }
 
 export async function updateUserRole(userId: number, newRole: 'customer' | 'admin') {
-  const { rows } = await pool.query(
+  const { rows } = await safeQuery(
     `UPDATE users
      SET role = $1
      WHERE id = $2
@@ -660,7 +729,7 @@ export async function updateUserRole(userId: number, newRole: 'customer' | 'admi
 }
 
 export async function updateUserBanStatus(userId: number, isBanned: boolean) {
-  const { rows } = await pool.query(
+  const { rows } = await safeQuery(
     `UPDATE users
      SET banned = $1
      WHERE id = $2
@@ -680,7 +749,7 @@ interface OrderFilter {
 }
 
 export async function getOrders() {
-  const { rows } = await pool.query(
+  const { rows } = await safeQuery(
     `SELECT o.id, o.total, o.status, o.created_at, o.stripe_payment_id, u.name as customer_name, u.email as customer_email
      FROM orders o
      JOIN users u ON o.user_id = u.id
@@ -733,7 +802,7 @@ export async function filterOrders(filters: OrderFilter) {
   query += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
   params.push(limit, offset);
 
-  const { rows } = await pool.query(query, params);
+  const { rows } = await safeQuery(query, params);
   return rows;
 }
 
@@ -763,15 +832,15 @@ export async function getTotalOrderCount(filters: OrderFilter) {
     paramIndex++;
   }
 
-  const { rows } = await pool.query(query, params);
+  const { rows } = await safeQuery(query, params);
   return parseInt(rows[0].count, 10);
 }
 
 export async function getUserProfile(userId: number) {
   const [userResult, addressesResult, ordersResult] = await Promise.all([
-    pool.query(`SELECT id, name, email FROM users WHERE id = $1`, [userId]),
-    pool.query(`SELECT id, type, street, city, state, postcode, is_default FROM addresses WHERE user_id = $1 ORDER BY is_default DESC, id DESC`, [userId]),
-    pool.query(`SELECT id, total, status, created_at FROM orders WHERE user_id = $1 ORDER BY created_at DESC LIMIT 5`, [userId]),
+    safeQuery(`SELECT id, name, email FROM users WHERE id = $1`, [userId]),
+    safeQuery(`SELECT id, type, street, city, state, postcode, is_default FROM addresses WHERE user_id = $1 ORDER BY is_default DESC, id DESC`, [userId]),
+    safeQuery(`SELECT id, total, status, created_at FROM orders WHERE user_id = $1 ORDER BY created_at DESC LIMIT 5`, [userId]),
   ]);
 
   const user = userResult.rows[0];
@@ -789,7 +858,7 @@ export async function getUserProfile(userId: number) {
 }
 
 export async function getUserOrders(userId: number) {
-  const { rows } = await pool.query(
+  const { rows } = await safeQuery(
     `SELECT id, total, status, created_at
      FROM orders
      WHERE user_id = $1
@@ -800,7 +869,7 @@ export async function getUserOrders(userId: number) {
 }
 
 export async function getUserOrderDetail(userId: number, orderId: number) {
-  const { rows: orderRows } = await pool.query(
+  const { rows: orderRows } = await safeQuery(
     `SELECT
         o.id,
         o.user_id,
@@ -826,7 +895,7 @@ export async function getUserOrderDetail(userId: number, orderId: number) {
     return null;
   }
 
-  const { rows: itemRows } = await pool.query(
+  const { rows: itemRows } = await safeQuery(
     `SELECT oi.*, p.title, p.images, p.condition
      FROM order_items oi
      JOIN products p ON oi.product_id = p.id
@@ -847,7 +916,7 @@ export async function getUserOrderDetail(userId: number, orderId: number) {
 }
 
 export async function updateUserNameEmail(userId: number, name: string, email: string) {
-  const { rows } = await pool.query(
+  const { rows } = await safeQuery(
     `UPDATE users
      SET name = $1, email = $2
      WHERE id = $3
@@ -858,7 +927,7 @@ export async function updateUserNameEmail(userId: number, name: string, email: s
 }
 
 export async function getUserPasswordHash(userId: number) {
-  const { rows } = await pool.query(
+  const { rows } = await safeQuery(
     `SELECT password_hash FROM users WHERE id = $1`,
     [userId]
   );
@@ -866,7 +935,9 @@ export async function getUserPasswordHash(userId: number) {
 }
 
 export async function updateDefaultAddress(userId: number, addressId: number) {
-  const client = await pool.connect();
+  const p = getPool();
+  if (!p) throw new Error('Database unavailable in demo mode');
+  const client = await p.connect();
   try {
     await client.query('BEGIN');
     // Set all addresses for the user to not default
@@ -910,7 +981,7 @@ export interface ReviewInput {
 }
 
 export async function getApprovedReviewsByProductId(productId: string): Promise<Review[]> {
-  const { rows } = await pool.query(
+  const { rows } = await safeQuery(
     `SELECT
         r.id,
         r.product_id,
@@ -931,7 +1002,7 @@ export async function getApprovedReviewsByProductId(productId: string): Promise<
 }
 
 export async function getAverageRatingAndCountByProductId(productId: string) {
-  const { rows } = await pool.query(
+  const { rows } = await safeQuery(
     `SELECT
         COALESCE(AVG(rating), 0)::numeric(10,2) as average_rating,
         COUNT(id) as review_count
@@ -946,7 +1017,7 @@ export async function getAverageRatingAndCountByProductId(productId: string) {
 }
 
 export async function submitReview({ productId, userId, rating, title, comment }: ReviewInput) {
-  const { rows } = await pool.query(
+  const { rows } = await safeQuery(
     `INSERT INTO reviews (product_id, user_id, rating, title, comment, is_approved)
      VALUES ($1, $2, $3, $4, $5, FALSE)
      RETURNING *`,
@@ -956,7 +1027,7 @@ export async function submitReview({ productId, userId, rating, title, comment }
 }
 
 export async function hasUserPurchasedProduct(userId: number, productId: string): Promise<boolean> {
-  const { rows } = await pool.query(
+  const { rows } = await safeQuery(
     `SELECT EXISTS (
         SELECT 1
         FROM orders o
@@ -971,7 +1042,7 @@ export async function hasUserPurchasedProduct(userId: number, productId: string)
 }
 
 export async function updateReviewStatus(reviewId: number, isApproved: boolean) {
-  const { rows } = await pool.query(
+  const { rows } = await safeQuery(
     `UPDATE reviews
      SET is_approved = $1
      WHERE id = $2
@@ -1033,7 +1104,7 @@ export async function getAllReviews(filters: ReviewFilter) {
   query += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
   params.push(limit, offset);
 
-  const { rows } = await pool.query(query, params);
+  const { rows } = await safeQuery(query, params);
   return rows;
 }
 
@@ -1064,13 +1135,13 @@ export async function getTotalReviewCount(filters: ReviewFilter) {
     paramIndex++;
   }
 
-  const { rows } = await pool.query(query, params);
+  const { rows } = await safeQuery(query, params);
   return parseInt(rows[0].count, 10);
 }
 
 // Wishlist methods
 export async function getWishlist(userId: number) {
-  const { rows } = await pool.query(
+  const { rows } = await safeQuery(
     `SELECT w.id as wishlist_id, p.*
      FROM wishlists w
      JOIN products p ON w.product_id = p.id
@@ -1082,7 +1153,7 @@ export async function getWishlist(userId: number) {
 }
 
 export async function addToWishlist(userId: number, productId: number) {
-  const { rows } = await pool.query(
+  const { rows } = await safeQuery(
     `INSERT INTO wishlists (user_id, product_id)
      VALUES ($1, $2)
      ON CONFLICT (user_id, product_id) DO NOTHING
@@ -1093,7 +1164,7 @@ export async function addToWishlist(userId: number, productId: number) {
 }
 
 export async function removeFromWishlist(userId: number, productId: number) {
-  const { rowCount } = await pool.query(
+  const { rowCount } = await safeQuery(
     `DELETE FROM wishlists
      WHERE user_id = $1 AND product_id = $2`,
     [userId, productId]
@@ -1102,7 +1173,7 @@ export async function removeFromWishlist(userId: number, productId: number) {
 }
 
 export async function isProductInWishlist(userId: number, productId: number): Promise<boolean> {
-  const { rows } = await pool.query(
+  const { rows } = await safeQuery(
     `SELECT EXISTS (
         SELECT 1
         FROM wishlists
@@ -1114,10 +1185,10 @@ export async function isProductInWishlist(userId: number, productId: number): Pr
 }
 
 export async function getAllUniqueBrands(): Promise<string[]> {
-  const { rows } = await pool.query(
+  const { rows } = await safeQuery(
     `SELECT DISTINCT brand FROM products WHERE brand IS NOT NULL AND brand != '' ORDER BY brand ASC`
   );
-  return rows.map(row => row.brand);
+  return rows.map((row: any) => row.brand);
 }
 
 export interface StoreSettings {
@@ -1132,31 +1203,47 @@ export interface StoreSettings {
 }
 
 export async function getStoreSettings(): Promise<StoreSettings> {
-  const { rows } = await pool.query(
-    `SELECT * FROM store_settings LIMIT 1`
-  );
-  return rows[0] || null;
+  try {
+    const { rows } = await safeQuery(
+      `SELECT * FROM store_settings LIMIT 1`
+    );
+    return rows[0] || null;
+  } catch (err: any) {
+    if (err.message === 'DEMO_MODE') return getDemoSettings();
+    throw err;
+  }
 }
 
 export async function updateStoreSettings(settings: Partial<StoreSettings>): Promise<StoreSettings> {
-  const params: any[] = [];
-  const columns: string[] = [];
+  try {
+    const params: any[] = [];
+    const columns: string[] = [];
 
-  if (settings.store_name !== undefined) { columns.push('store_name'); params.push(settings.store_name); }
-  if (settings.logo_url !== undefined) { columns.push('logo_url'); params.push(settings.logo_url); }
-  if (settings.primary_color !== undefined) { columns.push('primary_color'); params.push(settings.primary_color); }
-  if (settings.currency !== undefined) { columns.push('currency'); params.push(settings.currency); }
-  if (settings.social_links !== undefined) { columns.push('social_links'); params.push(JSON.stringify(settings.social_links)); }
+    if (settings.store_name !== undefined) { columns.push('store_name'); params.push(settings.store_name); }
+    if (settings.logo_url !== undefined) { columns.push('logo_url'); params.push(settings.logo_url); }
+    if (settings.primary_color !== undefined) { columns.push('primary_color'); params.push(settings.primary_color); }
+    if (settings.currency !== undefined) { columns.push('currency'); params.push(settings.currency); }
+    if (settings.social_links !== undefined) { columns.push('social_links'); params.push(JSON.stringify(settings.social_links)); }
 
-  const valuePlaceholders = columns.map((_, i) => `$${i + 1}`);
-  const updateSet = columns.map((col, i) => `${col} = EXCLUDED.${col}`);
+    const valuePlaceholders = columns.map((_, i) => `$${i + 1}`);
+    const updateSet = columns.map((col, i) => `${col} = EXCLUDED.${col}`);
 
-  const { rows } = await pool.query(
-    `INSERT INTO store_settings AS s (id, ${columns.join(', ')})
-     VALUES (1, ${valuePlaceholders.join(', ')})
-     ON CONFLICT (id) DO UPDATE SET ${updateSet.join(', ')}, updated_at = NOW()
-     RETURNING *`,
-    params
-  );
-  return rows[0];
+    const { rows } = await safeQuery(
+      `INSERT INTO store_settings AS s (id, ${columns.join(', ')})
+       VALUES (1, ${valuePlaceholders.join(', ')})
+       ON CONFLICT (id) DO UPDATE SET ${updateSet.join(', ')}, updated_at = NOW()
+       RETURNING *`,
+      params
+    );
+    return rows[0];
+  } catch (err: any) {
+    if (err.message === 'DEMO_MODE') {
+      return updateDemoSettings({
+        store_name: settings.store_name,
+        primary_color: settings.primary_color,
+        social_links: settings.social_links,
+      });
+    }
+    throw err;
+  }
 }

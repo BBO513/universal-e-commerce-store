@@ -1,6 +1,7 @@
 'use server';
 
-import { updateStoreSettings } from '@/lib/db';
+import { updateStoreSettings, isDemoMode } from '@/lib/db';
+import { getCookiePayload } from '@/lib/demo-store';
 import { cookies } from 'next/headers';
 
 export async function saveWizardSettings(formData: FormData): Promise<{ success: boolean; error?: string }> {
@@ -32,6 +33,16 @@ export async function saveWizardSettings(formData: FormData): Promise<{ success:
       path: '/',
       maxAge: 60 * 60 * 24 * 365,
     });
+
+    if (isDemoMode()) {
+      cookieStore.set('demo_data', getCookiePayload(), {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 60 * 60 * 24 * 365,
+      });
+    }
 
     return { success: true };
   } catch (error: any) {

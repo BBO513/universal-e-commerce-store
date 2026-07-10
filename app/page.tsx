@@ -1,4 +1,6 @@
 ﻿import { getProducts, getStoreSettings } from '@/lib/db';
+import { hydrateFromCookie } from '@/lib/demo-store';
+import { cookies } from 'next/headers';
 import PremiumHero from '@/components/PremiumHero';
 import ProductCard from '@/components/ProductCard';
 
@@ -8,6 +10,15 @@ export default async function HomePage() {
   let products: any[] = [];
   let settings: any = { store_name: 'My Store', primary_color: '#0F4B5F' };
   let storeConfigured = false;
+
+  try {
+    const demoCookie = cookies().get('demo_data')?.value;
+    if (demoCookie) {
+      hydrateFromCookie(demoCookie);
+    }
+  } catch {
+    // cookie not available
+  }
 
   try {
     products = await getProducts();
