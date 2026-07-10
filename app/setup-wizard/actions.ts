@@ -35,7 +35,13 @@ export async function saveWizardSettings(formData: FormData): Promise<{ success:
 
     return { success: true };
   } catch (error: any) {
-    console.error('Failed to save wizard settings:', error);
+    console.error('Failed to save wizard settings:', {
+      message: error.message,
+      detail: error.detail,
+      code: error.code,
+      hint: error.hint,
+      stack: error.stack,
+    });
     return { success: false, error: error.message };
   }
 }

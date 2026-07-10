@@ -1139,20 +1139,23 @@ export async function getStoreSettings(): Promise<StoreSettings> {
 }
 
 export async function updateStoreSettings(settings: Partial<StoreSettings>): Promise<StoreSettings> {
-  const setClauses: string[] = [];
   const params: any[] = [];
-  let paramIndex = 1;
+  const columns: string[] = [];
 
-  if (settings.store_name !== undefined) { setClauses.push(`store_name = $${paramIndex}`); params.push(settings.store_name); paramIndex++; }
-  if (settings.logo_url !== undefined) { setClauses.push(`logo_url = $${paramIndex}`); params.push(settings.logo_url); paramIndex++; }
-  if (settings.primary_color !== undefined) { setClauses.push(`primary_color = $${paramIndex}`); params.push(settings.primary_color); paramIndex++; }
-  if (settings.currency !== undefined) { setClauses.push(`currency = $${paramIndex}`); params.push(settings.currency); paramIndex++; }
-  if (settings.social_links !== undefined) { setClauses.push(`social_links = $${paramIndex}`); params.push(JSON.stringify(settings.social_links)); paramIndex++; }
+  if (settings.store_name !== undefined) { columns.push('store_name'); params.push(settings.store_name); }
+  if (settings.logo_url !== undefined) { columns.push('logo_url'); params.push(settings.logo_url); }
+  if (settings.primary_color !== undefined) { columns.push('primary_color'); params.push(settings.primary_color); }
+  if (settings.currency !== undefined) { columns.push('currency'); params.push(settings.currency); }
+  if (settings.social_links !== undefined) { columns.push('social_links'); params.push(JSON.stringify(settings.social_links)); }
 
-  setClauses.push(`updated_at = NOW()`);
+  const valuePlaceholders = columns.map((_, i) => `$${i + 1}`);
+  const updateSet = columns.map((col, i) => `${col} = EXCLUDED.${col}`);
 
   const { rows } = await pool.query(
-    `UPDATE store_settings SET ${setClauses.join(', ')} WHERE id = (SELECT id FROM store_settings LIMIT 1) RETURNING *`,
+    `INSERT INTO store_settings AS s (id, ${columns.join(', ')})
+     VALUES (1, ${valuePlaceholders.join(', ')})
+     ON CONFLICT (id) DO UPDATE SET ${updateSet.join(', ')}, updated_at = NOW()
+     RETURNING *`,
     params
   );
   return rows[0];
