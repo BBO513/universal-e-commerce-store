@@ -298,22 +298,6 @@ export default function SetupWizardPage() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-slate-500 dark:text-slate-400">Custom:</span>
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700"
-                          style={{ backgroundColor: wizardData.primaryColor }}
-                        />
-                        <input
-                          type="text"
-                          value={wizardData.primaryColor}
-                          onChange={(e) => updateField('primaryColor', e.target.value)}
-                          className="w-28 px-3 py-1.5 text-sm font-mono bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-300"
-                        />
-                      </div>
-                    </div>
-
                     <div className="flex gap-3">
                       <div
                         className="flex-1 p-4 rounded-xl text-sm font-semibold text-center"
