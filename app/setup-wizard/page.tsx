@@ -300,26 +300,6 @@ export default function SetupWizardPage() {
                       </div>
                     </div>
 
-                    <div className="flex gap-3">
-                      <div
-                        className="flex-1 p-4 rounded-xl text-sm font-semibold text-center"
-                        style={{ backgroundColor: wizardData.primaryColor, color: '#fff' }}
-                      >
-                        Primary
-                      </div>
-                      <div
-                        className="flex-1 p-4 rounded-xl text-sm font-semibold text-center"
-                        style={{ backgroundColor: wizardData.primaryColor + '20', color: wizardData.primaryColor }}
-                      >
-                        Soft
-                      </div>
-                      <div
-                        className="flex-1 p-4 rounded-xl text-sm font-semibold text-center border"
-                        style={{ borderColor: wizardData.primaryColor + '40', color: wizardData.primaryColor }}
-                      >
-                        Outline
-                      </div>
-                    </div>
                   </div>
                 )}
 
