@@ -7,6 +7,7 @@ export const dynamic = 'force-dynamic';
 export default async function HomePage() {
   let products: any[] = [];
   let settings: any = { store_name: 'My Store', primary_color: '#0F4B5F' };
+  let storeConfigured = false;
 
   try {
     products = await getProducts();
@@ -18,6 +19,7 @@ export default async function HomePage() {
     const dbSettings = await getStoreSettings();
     if (dbSettings) {
       settings = dbSettings;
+      storeConfigured = dbSettings.store_name !== 'My Store' && dbSettings.store_name !== '';
     }
   } catch {
     // Fall back to defaults already set
@@ -91,16 +93,39 @@ export default async function HomePage() {
 
         {products.length === 0 && (
           <section className="text-center py-32">
-            <p className="text-zinc-400 dark:text-zinc-600 text-lg font-medium tracking-wide">
-              No products yet. Be the first to list something.
-            </p>
-            <a
-              href="/sell"
-              className="inline-block mt-6 px-8 py-3 rounded-full text-white text-sm font-semibold tracking-wide transition-colors hover:opacity-90"
-              style={{ backgroundColor: settings.primary_color }}
-            >
-              List Your Item
-            </a>
+            {!storeConfigured ? (
+              <>
+                <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-zinc-900 dark:text-white mb-4 font-[family-name:var(--font-heading)]">
+                  Welcome. Let's build your business.
+                </h2>
+                <p className="text-zinc-400 dark:text-zinc-600 text-lg font-medium tracking-wide">
+                  Before you can sell, we need to set up your store's name and branding.
+                </p>
+                <a
+                  href="/setup-wizard"
+                  className="inline-block mt-6 px-8 py-3 rounded-full text-white text-sm font-semibold tracking-wide transition-colors hover:opacity-90"
+                  style={{ backgroundColor: settings.primary_color }}
+                >
+                  Launch My Store
+                </a>
+              </>
+            ) : (
+              <>
+                <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-zinc-900 dark:text-white mb-4 font-[family-name:var(--font-heading)]">
+                  Your store is live!
+                </h2>
+                <p className="text-zinc-400 dark:text-zinc-600 text-lg font-medium tracking-wide">
+                  Everything is set up. Now let's add your very first product.
+                </p>
+                <a
+                  href="/sell"
+                  className="inline-block mt-6 px-8 py-3 rounded-full text-white text-sm font-semibold tracking-wide transition-colors hover:opacity-90"
+                  style={{ backgroundColor: settings.primary_color }}
+                >
+                  Add My First Product
+                </a>
+              </>
+            )}
           </section>
         )}
       </div>
