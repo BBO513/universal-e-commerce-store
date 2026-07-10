@@ -1,0 +1,41 @@
+'use server';
+
+import { updateStoreSettings } from '@/lib/db';
+import { cookies } from 'next/headers';
+
+export async function saveWizardSettings(formData: FormData): Promise<{ success: boolean; error?: string }> {
+  try {
+    const storeName = formData.get('storeName') as string;
+    const primaryColor = formData.get('primaryColor') as string;
+    const socialLinksJson = formData.get('socialLinks') as string;
+
+    let socialLinks = {};
+    if (socialLinksJson) {
+      try {
+        socialLinks = JSON.parse(socialLinksJson);
+      } catch {
+        socialLinks = {};
+      }
+    }
+
+    await updateStoreSettings({
+      store_name: storeName,
+      primary_color: primaryColor,
+      social_links: socialLinks,
+    });
+
+    const cookieStore = cookies();
+    cookieStore.set('store_configured', 'true', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 365,
+    });
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Failed to save wizard settings:', error);
+    return { success: false, error: error.message };
+  }
+}

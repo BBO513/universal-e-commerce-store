@@ -1,4 +1,4 @@
-﻿import { getProducts } from '@/lib/db';
+﻿import { getProducts, getStoreSettings } from '@/lib/db';
 import PremiumHero from '@/components/PremiumHero';
 import ProductCard from '@/components/ProductCard';
 
@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
   let products: any[] = [];
+  let settings: any = { store_name: 'My Store', primary_color: '#0F4B5F' };
 
   try {
     products = await getProducts();
@@ -13,18 +14,33 @@ export default async function HomePage() {
     products = [];
   }
 
+  try {
+    const dbSettings = await getStoreSettings();
+    if (dbSettings) {
+      settings = dbSettings;
+    }
+  } catch {
+    // Fall back to defaults already set
+  }
+
   const freshDrops = products.slice(0, 4);
   const moreGoods = products.slice(4);
 
   return (
     <div className="min-h-screen bg-white dark:bg-zinc-950">
-      <PremiumHero />
+      <PremiumHero
+        storeName={settings.store_name}
+        primaryColor={settings.primary_color}
+      />
 
       <div className="max-w-7xl mx-auto px-6 pb-24">
         {freshDrops.length > 0 && (
           <section className="mb-24">
             <div className="flex items-center gap-3 mb-10">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span
+                className="w-2 h-2 rounded-full animate-pulse"
+                style={{ backgroundColor: settings.primary_color }}
+              />
               <p className="text-xs sm:text-sm uppercase tracking-[0.32em] text-zinc-400 font-medium">
                 Fresh Drops
               </p>
@@ -80,7 +96,8 @@ export default async function HomePage() {
             </p>
             <a
               href="/sell"
-              className="inline-block mt-6 px-8 py-3 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-sm font-semibold tracking-wide hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors"
+              className="inline-block mt-6 px-8 py-3 rounded-full text-white text-sm font-semibold tracking-wide transition-colors hover:opacity-90"
+              style={{ backgroundColor: settings.primary_color }}
             >
               List Your Item
             </a>

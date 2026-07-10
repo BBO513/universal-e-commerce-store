@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 import {
   Check,
   ChevronLeft,
@@ -13,6 +14,7 @@ import {
   Sparkles,
   Loader2,
 } from 'lucide-react';
+import { saveWizardSettings } from './actions';
 
 const STEPS = [
   { id: 1, label: 'Brand', icon: Store },
@@ -51,6 +53,8 @@ export default function SetupWizardPage() {
   const [direction, setDirection] = useState(1);
   const [connecting, setConnecting] = useState<string | null>(null);
   const [connected, setConnected] = useState<string[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+  const router = useRouter();
 
   const [wizardData, setWizardData] = useState<WizardData>({
     storeName: '',
@@ -534,12 +538,37 @@ export default function SetupWizardPage() {
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => alert('Settings saved! (API integration coming soon)')}
-                className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-all shadow-lg"
+                onClick={async () => {
+                  setIsSaving(true);
+                  const fd = new FormData();
+                  fd.append('storeName', wizardData.storeName || 'My Store');
+                  fd.append('primaryColor', wizardData.primaryColor);
+                  fd.append('socialLinks', JSON.stringify(wizardData.socialLinks));
+                  const result = await saveWizardSettings(fd);
+                  if (result.success) {
+                    router.push('/');
+                  } else {
+                    alert('Failed to save: ' + (result.error || 'Unknown error'));
+                    setIsSaving(false);
+                  }
+                }}
+                disabled={isSaving}
+                className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-all shadow-lg ${
+                  isSaving ? 'opacity-60 cursor-wait' : ''
+                }`}
                 style={{ backgroundColor: wizardData.primaryColor }}
               >
-                <Sparkles className="w-4 h-4" />
-                Finish Setup
+                {isSaving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    Finish Setup
+                  </>
+                )}
               </motion.button>
             )}
           </div>

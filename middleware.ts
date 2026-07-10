@@ -1,21 +1,38 @@
+import { getToken } from 'next-auth/jwt';
+import { NextResponse, NextRequest } from 'next/server';
 
-import { withAuth } from 'next-auth/middleware';
-import { NextResponse } from 'next/server';
+export async function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
 
-export default withAuth(
-  function middleware(req) {
-    // Redirect if not admin
-    if (req.nextUrl.pathname.startsWith('/admin') && req.nextauth.token?.role !== 'admin') {
+  if (
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/api') ||
+    pathname.startsWith('/setup-wizard') ||
+    pathname === '/favicon.ico'
+  ) {
+    return NextResponse.next();
+  }
+
+  const storeConfigured = req.cookies.get('store_configured');
+  if (!storeConfigured) {
+    return NextResponse.redirect(new URL('/setup-wizard', req.url));
+  }
+
+  if (pathname.startsWith('/admin')) {
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    if (!token) {
+      return NextResponse.redirect(new URL('/login', req.url));
+    }
+    if (token.role !== 'admin') {
       return NextResponse.rewrite(new URL('/unauthorized', req.url));
     }
-  },
-  {
-    callbacks: {
-      authorized: ({ token }) => !!token, // Only allow authenticated users
-    },
   }
-);
+
+  return NextResponse.next();
+}
 
 export const config = {
-  matcher: ['/admin/:path*'], // Protect all routes under /admin
+  matcher: [
+    '/((?!_next|api|setup-wizard|favicon\\.ico|.*\\.(?:svg|png|jpg|jpeg|gif|ico|webp|woff2?|ttf|eot|css|js)$).*)',
+  ],
 };

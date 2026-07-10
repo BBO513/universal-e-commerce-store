@@ -1,23 +1,36 @@
 'use client';
 
-export default function PremiumHero() {
+interface PremiumHeroProps {
+  storeName: string;
+  primaryColor?: string;
+}
+
+export default function PremiumHero({ storeName, primaryColor = '#0F4B5F' }: PremiumHeroProps) {
+  const accentRgb = hexToRgb(primaryColor);
+
   return (
     <section className="relative flex items-center justify-center min-h-[70vh] overflow-hidden bg-zinc-950">
       <div className="absolute inset-0 mesh-gradient" />
 
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(63,94,251,0.08)_0%,_transparent_70%)]" />
+      <div
+        className="absolute inset-0"
+        style={{
+          background: `radial-gradient(ellipse at center, rgba(${accentRgb}, 0.08) 0%, transparent 70%)`,
+        }}
+      />
 
       <div className="relative z-10 text-center px-6 max-w-4xl mx-auto">
-        <p className="text-xs sm:text-sm uppercase tracking-[0.40em] text-zinc-500 mb-6 font-medium">
-          Curated Marketplace
+        <p
+          className="text-xs sm:text-sm uppercase tracking-[0.40em] mb-6 font-medium"
+          style={{ color: primaryColor }}
+        >
+          Store
         </p>
         <h1 className="text-5xl sm:text-7xl md:text-8xl font-bold tracking-tight text-white leading-[0.95]">
-          Curated Goods
-          <br />
-          <span className="text-zinc-400">for the Modern Era</span>
+          {storeName}
         </h1>
         <p className="mt-8 text-base sm:text-lg text-zinc-500 max-w-xl mx-auto leading-relaxed tracking-wide">
-          A premium destination for exceptional craftsmanship. Every piece tells a story.
+          Discover unique products from our community.
         </p>
       </div>
 
@@ -45,4 +58,12 @@ export default function PremiumHero() {
       `}</style>
     </section>
   );
+}
+
+function hexToRgb(hex: string): string {
+  const clean = hex.replace('#', '');
+  const r = parseInt(clean.substring(0, 2), 16);
+  const g = parseInt(clean.substring(2, 4), 16);
+  const b = parseInt(clean.substring(4, 6), 16);
+  return `${r}, ${g}, ${b}`;
 }
