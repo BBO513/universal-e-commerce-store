@@ -1,6 +1,8 @@
+'use client';
 
 import Link from 'next/link';
-import FadeAspectImage from './FadeAspectImage';
+import { useCart } from '@/context/CartContext';
+import { Plus } from 'lucide-react';
 
 interface ProductCardProps {
   id: string;
@@ -10,57 +12,71 @@ interface ProductCardProps {
   condition: 'new' | 'used';
   stock: number;
   brand?: string;
+  showAddToCart?: boolean;
 }
 
-export default function ProductCard({ id, title, price, images, condition, stock, brand }: ProductCardProps) {
+export default function ProductCard({
+  id,
+  title,
+  price,
+  images,
+  condition,
+  stock,
+  brand,
+  showAddToCart,
+}: ProductCardProps) {
+  const { addItem } = useCart();
+
   const formatPrice = (value: number) => {
     return new Intl.NumberFormat('en-AU', {
       style: 'currency',
       currency: 'AUD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
     }).format(value);
   };
 
-  const getStockBadge = (currentStock: number) => {
-    if (currentStock === 0) {
-      return <span className="bg-red-500 text-white text-xs font-semibold px-2 py-0.5 rounded">Out of stock</span>;
-    } else if (currentStock < 10) {
-      return <span className="bg-yellow-500 text-white text-xs font-semibold px-2 py-0.5 rounded">Low stock</span>;
-    } else {
-      return <span className="bg-green-500 text-white text-xs font-semibold px-2 py-0.5 rounded">In stock</span>;
-    }
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    addItem(parseInt(id, 10), 1);
   };
 
   return (
     <Link
       href={`/product/${id}`}
-      className="group block card-surface hover:-translate-y-0.5"
+      className="group block"
     >
-      {images && images.length > 0 ? (
-        <FadeAspectImage
-          src={images[0]}
-          alt={title}
-          aspect="aspect-square"
-          wrapperClassName="w-full"
-          className="group-hover:scale-105"
-        />
-      ) : (
-        <div className="w-full aspect-square flex items-center justify-center text-slate-400 rounded-3xl bg-slate-100">No Image</div>
-      )}
-      <div className="p-5">
-        <div className="flex items-start justify-between gap-3">
-          <h3 className="text-lg font-semibold text-slate-950 truncate">{title}</h3>
-        </div>
-        <p className="text-slate-700 text-base mt-4">{formatPrice(price)}</p>
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <span
-            className={`text-xs font-semibold px-3 py-1 rounded-full text-white ${
-              condition === 'new' ? 'bg-boutique-accent' : 'bg-slate-500'
-            }`}
+      <div className="relative overflow-hidden rounded-3xl bg-zinc-100 dark:bg-zinc-900 mb-4">
+        {images && images.length > 0 ? (
+          <img
+            src={images[0]}
+            alt={title}
+            className="w-full aspect-square object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+            loading="lazy"
+          />
+        ) : (
+          <div className="w-full aspect-square flex items-center justify-center text-zinc-400 dark:text-zinc-600 text-sm font-medium">
+            No Image
+          </div>
+        )}
+        {showAddToCart && stock > 0 && (
+          <button
+            onClick={handleAddToCart}
+            className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-lg shadow-black/10 hover:bg-white dark:hover:bg-zinc-800"
+            aria-label="Add to cart"
           >
-            {condition === 'new' ? 'New' : 'Used'}
-          </span>
-          {getStockBadge(stock)}
-        </div>
+            <Plus className="w-5 h-5 text-zinc-900 dark:text-white" />
+          </button>
+        )}
+      </div>
+      <div className="px-1">
+        <h3 className="text-sm sm:text-base font-bold tracking-tight text-zinc-900 dark:text-white truncate font-[family-name:var(--font-heading)]">
+          {title}
+        </h3>
+        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400 tracking-wide">
+          {formatPrice(price)}
+        </p>
       </div>
     </Link>
   );
