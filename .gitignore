@@ -18,6 +18,11 @@
 # Misc
 .DS_Store
 *.pem
+*.ps1
+
+# IDE
+.vs/
+.gemini/
 
 #
 # Sublime Text
@@ -38,11 +43,6 @@
 # JetBrains
 #
 .idea
-
-#
-# Mac
-#
-.DS_Store
 
 # Environment variables
 .env
