@@ -66,7 +66,7 @@ export default function SellPage() {
       const mimeType = photoFile.type || 'image/jpeg';
 
       const genAI = new GoogleGenerativeAI(key);
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
       const result = await model.generateContent([
         GEMINI_PROMPT,
