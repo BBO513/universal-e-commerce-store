@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Plus, Home, ShoppingBag, User, Package, Wand2, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { listItem } from './actions';
 
 const NAV_ITEMS = [
@@ -42,11 +43,17 @@ export default function SellPage() {
     'Handmade Leather Journal',
   ];
 
+  const GEMINI_PROMPT =
+    'You are an expert e-commerce product lister. Look at this image. Identify the brand, model, and key features. Reply ONLY with a short, highly searchable, e-commerce-ready product title (max 8 words). Do not use conversational filler. Do not use quotes. If text is visible on the product, prioritize that.';
+
   const handleMagicIdentify = async () => {
     if (!photoFile || isIdentifying) return;
     setIsIdentifying(true);
 
     try {
+      const key = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+      if (!key) throw new Error('No API key');
+
       const base64 = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result as string);
@@ -54,18 +61,22 @@ export default function SellPage() {
         reader.readAsDataURL(photoFile);
       });
 
-      const res = await fetch('http://localhost:8000/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: base64 }),
-      });
+      const base64Data = base64.includes(',') ? base64.split(',')[1] : base64;
+      const mimeType = photoFile.type || 'image/jpeg';
 
-      if (res.ok) {
-        const data = await res.json();
-        setTitle(data.title);
+      const genAI = new GoogleGenerativeAI(key);
+      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+
+      const result = await model.generateContent([
+        GEMINI_PROMPT,
+        { inlineData: { mimeType, data: base64Data } },
+      ]);
+
+      const response = result.response.text().trim();
+      if (response) {
+        setTitle(response);
       } else {
-        const randomItem = MOCK_ITEMS[Math.floor(Math.random() * MOCK_ITEMS.length)];
-        setTitle(randomItem);
+        throw new Error('Empty response');
       }
     } catch {
       const randomItem = MOCK_ITEMS[Math.floor(Math.random() * MOCK_ITEMS.length)];

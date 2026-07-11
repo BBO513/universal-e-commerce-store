@@ -51,6 +51,9 @@
 .env.test.local
 .env.development.local
 
+# Python virtual environment
+vision-service/venv/
+
 # Log files
 npm-debug.log*
 yarn-debug.log*
