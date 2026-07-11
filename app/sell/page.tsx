@@ -52,7 +52,8 @@ export default function SellPage() {
 
     try {
       const key = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-      if (!key) throw new Error('No API key');
+      console.log('Gemini Key Present:', Boolean(key));
+      if (!key) throw new Error('NEXT_PUBLIC_GEMINI_API_KEY is not set in .env.local');
 
       const base64 = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
@@ -76,11 +77,10 @@ export default function SellPage() {
       if (response) {
         setTitle(response);
       } else {
-        throw new Error('Empty response');
+        throw new Error('Gemini returned an empty response');
       }
-    } catch {
-      const randomItem = MOCK_ITEMS[Math.floor(Math.random() * MOCK_ITEMS.length)];
-      setTitle(randomItem);
+    } catch (err: any) {
+      alert('Gemini API Error: ' + (err.message || String(err)));
     }
 
     setIsIdentifying(false);
