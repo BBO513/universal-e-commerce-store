@@ -44,7 +44,7 @@ export default function SellPage() {
   ];
 
   const GEMINI_PROMPT =
-    'You are an expert e-commerce product lister. Look at this image. Identify the brand, model, and key features. Reply ONLY with a short, highly searchable, e-commerce-ready product title (max 8 words). Do not use conversational filler. Do not use quotes. If text is visible on the product, prioritize that.';
+    'First, read every single word of text visible on the object in this image. Then, use that exact text to identify the product. Reply ONLY with the brand and model name. Do not guess if text is present.';
 
   const handleMagicIdentify = async () => {
     if (!photoFile || isIdentifying) return;
