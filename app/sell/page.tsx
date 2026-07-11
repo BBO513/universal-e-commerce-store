@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Plus, Home, ShoppingBag, User, Package } from 'lucide-react';
+import { X, Plus, Home, ShoppingBag, User, Package, Wand2, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { listItem } from './actions';
 
@@ -20,8 +20,36 @@ export default function SellPage() {
   const [price, setPrice] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
   const [isListing, setIsListing] = useState(false);
+  const [isIdentifying, setIsIdentifying] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+
+  const MOCK_ITEMS = [
+    'Vintage Silver Wristwatch',
+    'Sony WH-1000XM5 Headphones',
+    'Ceramic Pour-Over Coffee Set',
+    'Red Nike Running Shoes',
+    'Apple Magic Keyboard',
+    'Mid-Century Desk Lamp',
+    'Polaroid Instant Camera',
+    'Mechanical Gaming Keyboard',
+    'Leather Messenger Bag',
+    'Kindle Paperwhite e-Reader',
+    'Bose Bluetooth Speaker',
+    'Retro Vinyl Record Collection',
+    'Yoga Mat + Accessories Bundle',
+    'Samsung Galaxy Tablet',
+    'Handmade Leather Journal',
+  ];
+
+  const handleMagicIdentify = async () => {
+    if (!photo || isIdentifying) return;
+    setIsIdentifying(true);
+    await new Promise((r) => setTimeout(r, 1000));
+    const randomItem = MOCK_ITEMS[Math.floor(Math.random() * MOCK_ITEMS.length)];
+    setTitle(randomItem);
+    setIsIdentifying(false);
+  };
 
   const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -145,15 +173,57 @@ export default function SellPage() {
         style={{ minHeight: '40%' }}
       >
         {/* Title Input */}
-        <div className="border-b border-neutral-200 dark:border-neutral-800 pb-3">
+        <div className="border-b border-neutral-200 dark:border-neutral-800 pb-3 flex items-center gap-2">
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="What did you make?"
-            className="w-full text-2xl font-bold bg-transparent text-black dark:text-white placeholder:text-neutral-300 dark:placeholder:text-neutral-600 outline-none"
+            placeholder="What are you selling?"
+            className="flex-1 text-2xl font-bold bg-transparent text-black dark:text-white placeholder:text-neutral-300 dark:placeholder:text-neutral-600 outline-none"
           />
+          <motion.button
+            animate={
+              isIdentifying
+                ? {}
+                : photo && !title
+                ? { scale: [1, 1.12, 1], opacity: [0.6, 1, 0.6] }
+                : { scale: 1, opacity: 0.3 }
+            }
+            transition={
+              isIdentifying
+                ? {}
+                : { duration: 1.8, repeat: Infinity, ease: 'easeInOut' }
+            }
+            onClick={handleMagicIdentify}
+            disabled={!photo || isIdentifying}
+            className="w-10 h-10 flex items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 text-white shadow-md shadow-purple-500/20 disabled:opacity-30"
+          >
+            {isIdentifying ? (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.5 }}
+                animate={{ opacity: 1, scale: 1 }}
+              >
+                <Loader2 className="w-5 h-5 animate-spin" />
+              </motion.div>
+            ) : (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.5 }}
+                animate={{ opacity: 1, scale: 1 }}
+              >
+                <Wand2 className="w-5 h-5" />
+              </motion.div>
+            )}
+          </motion.button>
         </div>
+        {isIdentifying && (
+          <motion.p
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-xs font-medium text-purple-500 dark:text-purple-400 -mt-4"
+          >
+            Identifying item...
+          </motion.p>
+        )}
 
         {/* Price Input */}
         <div className="flex items-center border-b border-neutral-200 dark:border-neutral-800 pb-3">
