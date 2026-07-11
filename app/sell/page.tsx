@@ -43,11 +43,35 @@ export default function SellPage() {
   ];
 
   const handleMagicIdentify = async () => {
-    if (!photo || isIdentifying) return;
+    if (!photoFile || isIdentifying) return;
     setIsIdentifying(true);
-    await new Promise((r) => setTimeout(r, 1000));
-    const randomItem = MOCK_ITEMS[Math.floor(Math.random() * MOCK_ITEMS.length)];
-    setTitle(randomItem);
+
+    try {
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(photoFile);
+      });
+
+      const res = await fetch('http://localhost:8000/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: base64 }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setTitle(data.title);
+      } else {
+        const randomItem = MOCK_ITEMS[Math.floor(Math.random() * MOCK_ITEMS.length)];
+        setTitle(randomItem);
+      }
+    } catch {
+      const randomItem = MOCK_ITEMS[Math.floor(Math.random() * MOCK_ITEMS.length)];
+      setTitle(randomItem);
+    }
+
     setIsIdentifying(false);
   };
 
