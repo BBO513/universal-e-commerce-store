@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
-import { motion, AnimatePresence, useMotionValue, useTransform, animate } from 'framer-motion';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import {
   Check,
@@ -125,33 +125,43 @@ export default function SetupWizardPage() {
   };
 
   const TOTAL = 24;
-  const SECTOR = 360 / TOTAL;
-  const SENSITIVITY = 0.5;
+  const ITEM_SIZE = 80; // 64px chip + 16px gap
 
-  const x = useMotionValue(0);
-  const rotation = useTransform(x, (v) => v * SENSITIVITY);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const [centeredIndex, setCenteredIndex] = useState(0);
 
-  const getFrontIndex = (deg: number) => {
-    const n = ((deg % 360) + 360) % 360;
-    return Math.round(n / SECTOR) % TOTAL;
-  };
+  const getFrontIndex = () => centeredIndex;
 
   useEffect(() => {
     if (step === 1) {
       const idx = WHEEL_COLORS.findIndex((c) => c.value === wizardData.primaryColor);
-      if (idx >= 0) {
-        x.set((idx * SECTOR) / SENSITIVITY);
+      if (idx >= 0 && scrollRef.current) {
+        requestAnimationFrame(() => {
+          scrollRef.current?.scrollTo({ left: idx * ITEM_SIZE, behavior: 'instant' as ScrollBehavior });
+          setCenteredIndex(idx);
+        });
       }
     }
   }, [step]);
 
-  const handleDragEnd = (_: any, info: { offset: { x: number } }) => {
-    const deg = info.offset.x * SENSITIVITY;
-    const nearestDeg = Math.round(deg / SECTOR) * SECTOR;
-    const snapX = nearestDeg / SENSITIVITY;
-    animate(x, snapX, { type: 'spring', stiffness: 300, damping: 20 });
-    const idx = getFrontIndex(nearestDeg);
-    updateField('primaryColor', WHEEL_COLORS[idx].value);
+  const handleScroll = () => {
+    if (!scrollRef.current) return;
+    const index = Math.round(scrollRef.current.scrollLeft / ITEM_SIZE);
+    const clamped = Math.max(0, Math.min(index, TOTAL - 1));
+    setCenteredIndex(clamped);
+    if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+    scrollTimeoutRef.current = setTimeout(() => {
+      if (clamped === Math.round((scrollRef.current?.scrollLeft ?? 0) / ITEM_SIZE)) {
+        updateField('primaryColor', WHEEL_COLORS[clamped].value);
+      }
+    }, 200);
+  };
+
+  const selectColor = (index: number) => {
+    scrollRef.current?.scrollTo({ left: index * ITEM_SIZE, behavior: 'smooth' });
+    setCenteredIndex(index);
+    updateField('primaryColor', WHEEL_COLORS[index].value);
   };
 
   const isStepComplete = (s: number) => {
@@ -342,99 +352,72 @@ export default function SetupWizardPage() {
                           Pick a color
                         </h2>
                         <p className="text-slate-500 dark:text-slate-400 text-sm">
-                          Flick the wheel to find your vibe.
+                          Swipe to find your vibe.
                         </p>
                       </div>
                     </div>
 
                     <div className="flex flex-col items-center">
+                      {/* Native horizontal scroll-snap carousel */}
                       <div
-                        className="relative w-full h-72 flex items-center justify-center overflow-hidden"
-                        style={{ perspective: '1200px' }}
+                        ref={scrollRef}
+                        onScroll={handleScroll}
+                        className="w-full overflow-x-auto snap-x snap-mandatory scrollbar-none"
+                        style={{ WebkitOverflowScrolling: 'touch' }}
                       >
-                        {/* Ambient glow */}
-                        <div
-                          className="absolute w-48 h-48 rounded-full blur-[80px] opacity-30 transition-colors duration-500 pointer-events-none"
-                          style={{ backgroundColor: wizardData.primaryColor }}
-                        />
-
-                        {/* Fixed glowing notch indicator */}
-                        <div className="absolute top-1 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center pointer-events-none">
-                          <div className="w-2.5 h-2.5 rounded-full bg-white shadow-[0_0_14px_rgba(255,255,255,0.9),0_0_28px_rgba(255,255,255,0.4)]" />
-                          <div className="w-px h-6 bg-gradient-to-b from-white/90 to-transparent" />
-                        </div>
-
-                        {/* Drag overlay — the only element that moves (invisible to user due to overflow:hidden on parent) */}
-                        <motion.div
-                          drag="x"
-                          dragMomentum
-                          dragElastic={0}
-                          dragTransition={{ power: 0.18, timeConstant: 280 }}
-                          style={{ x }}
-                          onDragEnd={handleDragEnd}
-                          className="absolute inset-0 z-10 cursor-grab active:cursor-grabbing touch-none"
-                        />
-
-                        {/* Inner carousel — rotates based on useTransform(x → rotation) */}
-                        <motion.div
-                          className="absolute inset-0 flex items-center justify-center pointer-events-none"
-                          style={{
-                            rotateY: rotation,
-                            transformStyle: 'preserve-3d',
-                            WebkitTransformStyle: 'preserve-3d',
-                          }}
-                        >
+                        <div className="flex gap-4 items-center h-32">
+                          {/* Left spacer — allows first chip to snap to center */}
+                          <div className="flex-shrink-0 w-[calc(50%-32px)]" />
                           {WHEEL_COLORS.map((color, i) => {
-                            const baseAngle = SECTOR * i;
-                            const currentDeg = (x.get() * SENSITIVITY);
-                            const chipAngle = (((baseAngle - currentDeg) % 360) + 360) % 360;
-                            const absAngle = chipAngle > 180 ? 360 - chipAngle : chipAngle;
-                            const depth = Math.cos((absAngle * Math.PI) / 180);
-                            const isFront = absAngle < SECTOR;
-                            const isBack = absAngle > 90;
-                            const blurAmount = isBack ? (absAngle - 90) * 0.05 : 0;
-                            const opacity = 0.1 + depth * 0.9;
-                            const scale = 0.3 + depth * 0.7;
+                            const distance = Math.abs(i - centeredIndex);
+                            const isCentered = distance === 0;
+                            const scale = isCentered ? 1.25 : distance === 1 ? 0.85 : 0.7;
+                            const opacity = isCentered ? 1 : distance === 1 ? 0.55 : 0.25;
+                            const blur = distance > 1 ? `${Math.min((distance - 1) * 2, 4)}px` : '0px';
 
                             return (
                               <div
                                 key={i}
-                                className="absolute"
+                                className="snap-center flex-shrink-0 flex items-center justify-center"
                                 style={{
-                                  transform: `rotateY(${baseAngle}deg) translateZ(350px)`,
-                                  WebkitTransform: `rotateY(${baseAngle}deg) translateZ(350px)`,
+                                  width: '64px',
+                                  height: '64px',
+                                  transition: 'transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.35s ease, filter 0.35s ease',
+                                  transform: `scale(${scale})`,
+                                  opacity,
+                                  filter: `blur(${blur})`,
                                 }}
                               >
-                                <div
-                                  className="rounded-full"
+                                <button
+                                  onClick={() => selectColor(i)}
+                                  className="w-full h-full rounded-full cursor-pointer"
                                   style={{
-                                    width: `${34 + scale * 30}px`,
-                                    height: `${34 + scale * 30}px`,
-                                    opacity,
-                                    filter: blurAmount > 0 ? `blur(${blurAmount.toFixed(1)}px)` : undefined,
                                     backgroundColor: color.value,
-                                    boxShadow: isFront
-                                      ? `0 0 50px ${color.value}90, 0 0 100px ${color.value}30, 0 8px 24px rgba(0,0,0,0.4)`
-                                      : absAngle < 30
-                                      ? `0 0 20px ${color.value}40, 0 2px 8px rgba(0,0,0,0.2)`
-                                      : '0 1px 4px rgba(0,0,0,0.1)',
-                                    border: isFront
+                                    boxShadow: isCentered
+                                      ? `0 0 40px ${color.value}90, 0 0 80px ${color.value}30, 0 6px 20px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.4)`
+                                      : '0 2px 6px rgba(0,0,0,0.15)',
+                                    border: isCentered
                                       ? '3px solid rgba(255,255,255,0.95)'
                                       : '1px solid rgba(255,255,255,0.2)',
-                                    transform: `scale(${scale})`,
                                   }}
+                                  aria-label={color.name}
                                 />
                               </div>
                             );
                           })}
-                        </motion.div>
+                          {/* Right spacer */}
+                          <div className="flex-shrink-0 w-[calc(50%-32px)]" />
+                        </div>
                       </div>
 
+                      {/* Center indicator dot */}
+                      <div className="mt-1 w-1.5 h-1.5 rounded-full bg-white/60 dark:bg-white/40 pointer-events-none" />
+
                       <p
-                        className="mt-4 text-sm font-bold tracking-widest uppercase"
+                        className="mt-3 text-sm font-bold tracking-widest uppercase"
                         style={{ color: wizardData.primaryColor }}
                       >
-                        {WHEEL_COLORS[getFrontIndex(x.get() * SENSITIVITY)]?.name}
+                        {WHEEL_COLORS[centeredIndex]?.name}
                       </p>
                     </div>
                   </div>
