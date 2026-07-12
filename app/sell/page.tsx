@@ -2,9 +2,8 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Plus, Home, ShoppingBag, User, Package, Wand2, Loader2 } from 'lucide-react';
+import { X, Plus, Home, ShoppingBag, User, Package, Wand2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { listItem } from './actions';
 
 const NAV_ITEMS = [
@@ -21,7 +20,6 @@ export default function SellPage() {
   const [price, setPrice] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
   const [isListing, setIsListing] = useState(false);
-  const [isIdentifying, setIsIdentifying] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
@@ -43,47 +41,9 @@ export default function SellPage() {
     'Handmade Leather Journal',
   ];
 
-  const GEMINI_PROMPT =
-    'First, read every single word of text visible on the object in this image. Then, use that exact text to identify the product. Reply ONLY with the brand and model name. Do not guess if text is present.';
-
-  const handleMagicIdentify = async () => {
-    if (!photoFile || isIdentifying) return;
-    setIsIdentifying(true);
-
-    try {
-      const key = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-      console.log('Gemini Key Present:', Boolean(key));
-      if (!key) throw new Error('NEXT_PUBLIC_GEMINI_API_KEY is not set in .env.local');
-
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(photoFile);
-      });
-
-      const base64Data = base64.includes(',') ? base64.split(',')[1] : base64;
-      const mimeType = photoFile.type || 'image/jpeg';
-
-      const genAI = new GoogleGenerativeAI(key);
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-
-      const result = await model.generateContent([
-        GEMINI_PROMPT,
-        { inlineData: { mimeType, data: base64Data } },
-      ]);
-
-      const response = result.response.text().trim();
-      if (response) {
-        setTitle(response);
-      } else {
-        throw new Error('Gemini returned an empty response');
-      }
-    } catch (err: any) {
-      alert('Gemini API Error: ' + (err.message || String(err)));
-    }
-
-    setIsIdentifying(false);
+  const handleMagicIdentify = () => {
+    const randomItem = MOCK_ITEMS[Math.floor(Math.random() * MOCK_ITEMS.length)];
+    setTitle(randomItem);
   };
 
   const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -218,48 +178,17 @@ export default function SellPage() {
           />
           <motion.button
             animate={
-              isIdentifying
-                ? {}
-                : photo && !title
+              !title
                 ? { scale: [1, 1.12, 1], opacity: [0.6, 1, 0.6] }
                 : { scale: 1, opacity: 0.3 }
             }
-            transition={
-              isIdentifying
-                ? {}
-                : { duration: 1.8, repeat: Infinity, ease: 'easeInOut' }
-            }
+            transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
             onClick={handleMagicIdentify}
-            disabled={!photo || isIdentifying}
-            className="w-10 h-10 flex items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 text-white shadow-md shadow-purple-500/20 disabled:opacity-30"
+            className="w-10 h-10 flex items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 text-white shadow-md shadow-purple-500/20"
           >
-            {isIdentifying ? (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.5 }}
-                animate={{ opacity: 1, scale: 1 }}
-              >
-                <Loader2 className="w-5 h-5 animate-spin" />
-              </motion.div>
-            ) : (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.5 }}
-                animate={{ opacity: 1, scale: 1 }}
-              >
-                <Wand2 className="w-5 h-5" />
-              </motion.div>
-            )}
+            <Wand2 className="w-5 h-5" />
           </motion.button>
         </div>
-        {isIdentifying && (
-          <motion.p
-            initial={{ opacity: 0, y: -4 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-xs font-medium text-purple-500 dark:text-purple-400 -mt-4"
-          >
-            Identifying item...
-          </motion.p>
-        )}
-
         {/* Price Input */}
         <div className="flex items-center border-b border-neutral-200 dark:border-neutral-800 pb-3">
           <span className="text-4xl font-black text-neutral-300 dark:text-neutral-600 mr-1">$</span>
