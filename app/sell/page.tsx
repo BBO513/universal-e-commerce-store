@@ -21,6 +21,7 @@ export default function SellPage() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [isListing, setIsListing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const priceInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
   const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -145,26 +146,43 @@ export default function SellPage() {
         style={{ minHeight: '40%' }}
       >
         {/* Title Input */}
-        <div className="border-b border-neutral-200 dark:border-neutral-800 pb-3">
+        <div className="border-b border-neutral-200 dark:border-neutral-800 pb-4">
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="What are you selling?"
-            className="w-full text-2xl font-bold bg-transparent text-black dark:text-white placeholder:text-neutral-300 dark:placeholder:text-neutral-600 outline-none"
+            autoFocus
+            enterKeyHint="next"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                priceInputRef.current?.focus();
+              }
+            }}
+            className="w-full text-2xl font-bold bg-transparent text-black dark:text-white placeholder:text-neutral-300 dark:placeholder:text-neutral-600 outline-none py-3"
           />
         </div>
         {/* Price Input */}
-        <div className="flex items-center border-b border-neutral-200 dark:border-neutral-800 pb-3">
-          <span className="text-4xl font-black text-neutral-300 dark:text-neutral-600 mr-1">$</span>
+        <div className="flex items-center border-b border-neutral-200 dark:border-neutral-800 pb-4">
+          <span className="text-4xl font-black text-neutral-300 dark:text-neutral-600 mr-2">$</span>
           <input
+            ref={priceInputRef}
             type="number"
             value={price}
             onChange={(e) => setPrice(e.target.value)}
             placeholder="0"
             min="0"
             step="0.01"
-            className="w-full text-4xl font-black bg-transparent text-black dark:text-white placeholder:text-neutral-300 dark:placeholder:text-neutral-600 outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            inputMode="numeric"
+            enterKeyHint="done"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleList();
+              }
+            }}
+            className="w-full text-4xl font-black bg-transparent text-black dark:text-white placeholder:text-neutral-300 dark:placeholder:text-neutral-600 outline-none py-3 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           />
         </div>
 
