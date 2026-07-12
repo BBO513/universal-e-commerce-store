@@ -1,41 +1,23 @@
-﻿import { getProducts, getStoreSettings } from '@/lib/db';
-import { hydrateFromCookie } from '@/lib/demo-store';
-import { cookies } from 'next/headers';
+﻿'use client';
+
+import { useState, useEffect } from 'react';
+import { getDemoProducts, getDemoSettings, loadFromLocalStorage } from '@/lib/demo-store';
 import PremiumHero from '@/components/PremiumHero';
 import ProductCard from '@/components/ProductCard';
 
-export const dynamic = 'force-dynamic';
+export default function HomePage() {
+  const [hydrated, setHydrated] = useState(false);
+  const [products, setProducts] = useState<any[]>([]);
+  const [settings, setSettings] = useState<any>({ store_name: 'My Store', primary_color: '#0F4B5F' });
 
-export default async function HomePage() {
-  let products: any[] = [];
-  let settings: any = { store_name: 'My Store', primary_color: '#0F4B5F' };
-  let storeConfigured = false;
+  useEffect(() => {
+    loadFromLocalStorage();
+    setProducts(getDemoProducts());
+    setSettings(getDemoSettings());
+    setHydrated(true);
+  }, []);
 
-  try {
-    const demoCookie = cookies().get('demo_data')?.value;
-    if (demoCookie) {
-      hydrateFromCookie(demoCookie);
-    }
-  } catch {
-    // cookie not available
-  }
-
-  try {
-    products = await getProducts();
-    console.log('HOMEPAGE: Reading demo_data cookie, products count:', products.length);
-  } catch {
-    products = [];
-  }
-
-  try {
-    const dbSettings = await getStoreSettings();
-    if (dbSettings) {
-      settings = dbSettings;
-      storeConfigured = dbSettings.store_name !== 'My Store' && dbSettings.store_name !== '';
-    }
-  } catch {
-    // Fall back to defaults already set
-  }
+  const storeConfigured = settings.store_name !== 'My Store' && settings.store_name !== '';
 
   const freshDrops = products.slice(0, 4);
   const moreGoods = products.slice(4);
@@ -103,15 +85,15 @@ export default async function HomePage() {
           </section>
         )}
 
-        {products.length === 0 && (
+        {hydrated && products.length === 0 && (
           <section className="text-center py-32">
             {!storeConfigured ? (
               <>
                 <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-zinc-900 dark:text-white mb-4 font-[family-name:var(--font-heading)]">
-                  Welcome. Let's build your business.
+                  Welcome. Let&apos;s build your business.
                 </h2>
                 <p className="text-zinc-400 dark:text-zinc-600 text-lg font-medium tracking-wide">
-                  Before you can sell, we need to set up your store's name and branding.
+                  Before you can sell, we need to set up your store&apos;s name and branding.
                 </p>
                 <a
                   href="/setup-wizard"
@@ -127,7 +109,7 @@ export default async function HomePage() {
                   Your store is live!
                 </h2>
                 <p className="text-zinc-400 dark:text-zinc-600 text-lg font-medium tracking-wide">
-                  Everything is set up. Now let's add your very first product.
+                  Everything is set up. Now let&apos;s add your very first product.
                 </p>
                 <a
                   href="/sell"

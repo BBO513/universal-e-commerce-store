@@ -1,8 +1,6 @@
 'use server';
 
-import { updateStoreSettings, isDemoMode } from '@/lib/db';
-import { getCookiePayload } from '@/lib/demo-store';
-import { cookies } from 'next/headers';
+import { updateStoreSettings } from '@/lib/db';
 
 export async function saveWizardSettings(formData: FormData): Promise<{ success: boolean; error?: string }> {
   try {
@@ -24,25 +22,6 @@ export async function saveWizardSettings(formData: FormData): Promise<{ success:
       primary_color: primaryColor,
       social_links: socialLinks,
     });
-
-    const cookieStore = cookies();
-    cookieStore.set('store_configured', 'true', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 60 * 60 * 24 * 365,
-    });
-
-    if (isDemoMode()) {
-      cookieStore.set('demo_data', getCookiePayload(), {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 60 * 60 * 24 * 365,
-      });
-    }
 
     return { success: true };
   } catch (error: any) {

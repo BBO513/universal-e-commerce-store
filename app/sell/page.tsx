@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Plus, Home, ShoppingBag, User, Package } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { listItem } from './actions';
+import { saveToLocalStorage } from '@/lib/demo-store';
 
 const NAV_ITEMS = [
   { id: 'home', icon: Home, label: 'Home', href: '/' },
@@ -65,6 +66,7 @@ export default function SellPage() {
     setIsListing(false);
 
     if (result.success) {
+      saveToLocalStorage();
       setShowSuccess(true);
       setTimeout(() => {
         router.push('/');

@@ -1,8 +1,6 @@
 'use server';
 
-import { createProduct, getAllCategories, isDemoMode } from '@/lib/db';
-import { getCookiePayload } from '@/lib/demo-store';
-import { cookies } from 'next/headers';
+import { createProduct, getAllCategories } from '@/lib/db';
 
 export async function listItem(formData: FormData): Promise<{ success: boolean; error?: string }> {
   try {
@@ -20,7 +18,7 @@ export async function listItem(formData: FormData): Promise<{ success: boolean; 
 
     const sku = 'SKU-' + Math.random().toString(36).substring(2, 10).toUpperCase();
 
-    await createProduct(
+    const product = await createProduct(
       title,
       '',
       price,
@@ -34,20 +32,7 @@ export async function listItem(formData: FormData): Promise<{ success: boolean; 
       {}
     );
 
-    console.log('DEMO MODE: Saving product to cookie:', { title, price, sku });
-
-    if (isDemoMode()) {
-      const cookieStore = cookies();
-      cookieStore.set('demo_data', getCookiePayload(), {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 60 * 60 * 24 * 365,
-      });
-    }
-
-    return { success: true };
+    return { success: true, product };
   } catch (error: any) {
     return { success: false, error: error.message };
   }

@@ -55,12 +55,38 @@ export function hydrateFromCookie(cookieJson: string | undefined) {
 }
 
 export function getCookiePayload(): string {
-  const lightweightProducts = demoProducts.map((p) => ({
-    ...p,
-    images: [],
-  }));
   return JSON.stringify({
     settings: demoSettings,
-    products: lightweightProducts,
+    products: demoProducts,
   });
+}
+
+export function saveToLocalStorage() {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem('demo_data', JSON.stringify({
+      settings: demoSettings,
+      products: demoProducts,
+    }));
+  } catch {
+    // quota exceeded — silently ignore
+  }
+}
+
+export function loadFromLocalStorage() {
+  if (typeof window === 'undefined') return;
+  try {
+    const raw = localStorage.getItem('demo_data');
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    if (data.settings) {
+      Object.assign(demoSettings, data.settings);
+    }
+    if (data.products && Array.isArray(data.products)) {
+      demoProducts = data.products;
+      demoNextId = demoProducts.reduce((max: number, p: any) => Math.max(max, p.id || 0), 0) + 1;
+    }
+  } catch {
+    // ignore corrupt data
+  }
 }
