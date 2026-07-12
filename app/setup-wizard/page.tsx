@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import {
@@ -25,15 +25,27 @@ const STEPS = [
   { id: 4, label: 'Payments', icon: CreditCard },
 ];
 
-const COLOR_PALETTE = [
-  { name: 'Navy', value: '#0F4B5F' },
-  { name: 'Indigo', value: '#4338CA' },
-  { name: 'Emerald', value: '#047857' },
-  { name: 'Rose', value: '#E11D48' },
-  { name: 'Amber', value: '#D97706' },
-  { name: 'Violet', value: '#7C3AED' },
-  { name: 'Slate', value: '#334155' },
-  { name: 'Teal', value: '#0D9488' },
+const WHEEL_COLORS = [
+  { name: 'Crimson',   value: '#DC143C' },
+  { name: 'Tangerine', value: '#FF6B35' },
+  { name: 'Amber',     value: '#F5A623' },
+  { name: 'Gold',      value: '#E5A100' },
+  { name: 'Lime',      value: '#7CB342' },
+  { name: 'Emerald',   value: '#2E7D32' },
+  { name: 'Mint',      value: '#26A69A' },
+  { name: 'Teal',      value: '#00897B' },
+  { name: 'Cyan',      value: '#00ACC1' },
+  { name: 'Sky',       value: '#42A5F5' },
+  { name: 'Navy',      value: '#1565C0' },
+  { name: 'Indigo',    value: '#3949AB' },
+  { name: 'Violet',    value: '#7C3AED' },
+  { name: 'Plum',      value: '#8E24AA' },
+  { name: 'Magenta',   value: '#C2185B' },
+  { name: 'Rose',      value: '#E91E63' },
+  { name: 'Coral',     value: '#FF5252' },
+  { name: 'Ruby',      value: '#B71C1C' },
+  { name: 'Slate',     value: '#546E7A' },
+  { name: 'Graphite',  value: '#37474F' },
 ];
 
 const SOCIAL_PLATFORMS = [
@@ -106,6 +118,88 @@ export default function SetupWizardPage() {
       alert('Failed to save: ' + (result.error || 'Unknown error'));
       setIsSaving(false);
     }
+  };
+
+  const TOTAL = 20;
+  const SECTOR = 360 / TOTAL;
+  const angleRef = useRef(0);
+  const [wheelDisplay, setWheelDisplay] = useState(0);
+  const isDraggingRef = useRef(false);
+  const dragRef = useRef({ startX: 0, startAngle: 0, lastX: 0, lastTime: 0, velocity: 0 });
+  const lastSelectedRef = useRef(0);
+
+  const getFrontIndex = (angle: number) => {
+    const n = ((angle % 360) + 360) % 360;
+    return Math.round(n / SECTOR) % TOTAL;
+  };
+
+  useEffect(() => {
+    if (step === 1) {
+      const idx = WHEEL_COLORS.findIndex((c) => c.value === wizardData.primaryColor);
+      if (idx >= 0) {
+        angleRef.current = idx * SECTOR;
+        setWheelDisplay(idx * SECTOR);
+        lastSelectedRef.current = idx;
+      }
+    }
+  }, [step]);
+
+  useEffect(() => {
+    let frame: number;
+    const loop = () => {
+      if (!isDraggingRef.current) {
+        const vel = dragRef.current.velocity;
+        if (Math.abs(vel) > 0.05) {
+          angleRef.current += vel;
+          dragRef.current.velocity *= 0.92;
+        } else {
+          const n = ((angleRef.current % 360) + 360) % 360;
+          const nearest = Math.round(n / SECTOR) * SECTOR;
+          const diff = nearest - n;
+          if (Math.abs(diff) > 0.05) {
+            angleRef.current += diff * 0.25;
+          } else {
+            angleRef.current = angleRef.current - n + nearest;
+          }
+          const frontIdx = getFrontIndex(angleRef.current);
+          if (frontIdx !== lastSelectedRef.current) {
+            lastSelectedRef.current = frontIdx;
+            updateField('primaryColor', WHEEL_COLORS[frontIdx].value);
+          }
+        }
+        setWheelDisplay(angleRef.current);
+      }
+      frame = requestAnimationFrame(loop);
+    };
+    frame = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    isDraggingRef.current = true;
+    dragRef.current.startX = e.clientX;
+    dragRef.current.startAngle = angleRef.current;
+    dragRef.current.lastX = e.clientX;
+    dragRef.current.lastTime = performance.now();
+    dragRef.current.velocity = 0;
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!isDraggingRef.current) return;
+    const dx = e.clientX - dragRef.current.lastX;
+    const now = performance.now();
+    const dt = now - dragRef.current.lastTime;
+    if (dt > 0) dragRef.current.velocity = (dx / dt) * 16;
+    dragRef.current.lastX = e.clientX;
+    dragRef.current.lastTime = now;
+    angleRef.current = dragRef.current.startAngle + (e.clientX - dragRef.current.startX) * 0.55;
+    setWheelDisplay(angleRef.current);
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+    isDraggingRef.current = false;
   };
 
   const isStepComplete = (s: number) => {
@@ -296,44 +390,92 @@ export default function SetupWizardPage() {
                           Pick a color
                         </h2>
                         <p className="text-slate-500 dark:text-slate-400 text-sm">
-                          Tap the one that feels like you.
+                          Spin the wheel to find your vibe.
                         </p>
                       </div>
                     </div>
 
-                    <div className="overflow-x-auto pb-2 -mx-2 px-2 scrollbar-none">
-                      <div className="flex gap-5 min-w-min">
-                        {COLOR_PALETTE.map((color) => {
-                          const isSelected = wizardData.primaryColor === color.value;
-                          return (
-                            <motion.button
-                              key={color.value}
-                              whileTap={{ scale: 1.12 }}
-                              transition={{ type: 'spring', stiffness: 400, damping: 12 }}
-                              onClick={() => updateField('primaryColor', color.value)}
-                              className={`relative w-20 h-20 rounded-full flex-shrink-0 border-[3px] transition-shadow ${
-                                isSelected
-                                  ? 'border-white dark:border-slate-200 ring-[3px] ring-white dark:ring-slate-200 ring-offset-4 ring-offset-white/70 dark:ring-offset-slate-800/70 shadow-xl shadow-black/25'
-                                  : 'border-slate-200 dark:border-slate-600'
-                              }`}
-                              style={{ backgroundColor: color.value }}
-                              aria-label={color.name}
-                            >
-                              {isSelected && (
-                                <motion.div
-                                  initial={{ scale: 0 }}
-                                  animate={{ scale: 1 }}
-                                  className="absolute inset-0 flex items-center justify-center"
-                                >
-                                  <Check className="w-6 h-6 text-white drop-shadow-md" />
-                                </motion.div>
-                              )}
-                            </motion.button>
-                          );
-                        })}
-                      </div>
-                    </div>
+                    <div className="flex flex-col items-center">
+                      <div
+                        className="relative w-full h-72 flex items-center justify-center select-none touch-none cursor-grab active:cursor-grabbing"
+                        style={{ perspective: '800px' }}
+                        onPointerDown={handlePointerDown}
+                        onPointerMove={handlePointerMove}
+                        onPointerUp={handlePointerUp}
+                        onPointerCancel={handlePointerUp}
+                      >
+                        {/* Glow behind front chip */}
+                        <div
+                          className="absolute w-24 h-24 rounded-full blur-3xl opacity-40 transition-colors duration-300"
+                          style={{ backgroundColor: wizardData.primaryColor }}
+                        />
+                        {/* Center indicator dot */}
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1.5 h-4 bg-white/90 dark:bg-white/70 rounded-full z-10 shadow-sm" />
+                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1.5 h-4 bg-white/90 dark:bg-white/70 rounded-full z-10 shadow-sm" />
 
+                        <div
+                          className="absolute inset-0 flex items-center justify-center"
+                          style={{
+                            transformStyle: 'preserve-3d',
+                            transform: `rotateY(${wheelDisplay}deg)`,
+                          }}
+                        >
+                          {WHEEL_COLORS.map((color, i) => {
+                            const rotY = SECTOR * i;
+                            const chipAngle = (((rotY - wheelDisplay) % 360) + 360) % 360;
+                            const absAngle = chipAngle > 180 ? 360 - chipAngle : chipAngle;
+                            const depth = Math.cos((absAngle * Math.PI) / 180);
+                            const scale = 0.4 + depth * 0.6;
+                            const opacity = 0.1 + depth * 0.9;
+                            const isFront = absAngle < SECTOR;
+
+                            return (
+                              <div
+                                key={i}
+                                className="absolute"
+                                style={{
+                                  transform: `rotateY(${rotY}deg) translateZ(160px)`,
+                                  backfaceVisibility: 'hidden',
+                                  WebkitBackfaceVisibility: 'hidden',
+                                }}
+                              >
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    angleRef.current = i * SECTOR;
+                                    setWheelDisplay(i * SECTOR);
+                                    lastSelectedRef.current = i;
+                                    updateField('primaryColor', color.value);
+                                  }}
+                                  className="rounded-full transition-shadow"
+                                  style={{
+                                    width: `${36 + scale * 28}px`,
+                                    height: `${36 + scale * 28}px`,
+                                    backgroundColor: color.value,
+                                    opacity,
+                                    boxShadow: isFront
+                                      ? `0 0 40px ${color.value}80, 0 0 80px ${color.value}30, 0 6px 16px rgba(0,0,0,0.35)`
+                                      : '0 2px 6px rgba(0,0,0,0.15)',
+                                    border: isFront
+                                      ? '3px solid rgba(255,255,255,0.95)'
+                                      : '1.5px solid rgba(255,255,255,0.3)',
+                                    transform: `scale(${scale})`,
+                                  }}
+                                  aria-label={color.name}
+                                />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <p
+                        className="mt-3 text-sm font-semibold tracking-wide transition-colors duration-300"
+                        style={{ color: wizardData.primaryColor }}
+                      >
+                        {WHEEL_COLORS[getFrontIndex(wheelDisplay)]?.name}
+                      </p>
+                    </div>
                   </div>
                 )}
 
