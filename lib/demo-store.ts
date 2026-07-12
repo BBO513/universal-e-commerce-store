@@ -55,8 +55,12 @@ export function hydrateFromCookie(cookieJson: string | undefined) {
 }
 
 export function getCookiePayload(): string {
+  const lightweightProducts = demoProducts.map((p) => ({
+    ...p,
+    images: [],
+  }));
   return JSON.stringify({
     settings: demoSettings,
-    products: demoProducts,
+    products: lightweightProducts,
   });
 }

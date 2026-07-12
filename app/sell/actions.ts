@@ -34,6 +34,8 @@ export async function listItem(formData: FormData): Promise<{ success: boolean; 
       {}
     );
 
+    console.log('DEMO MODE: Saving product to cookie:', { title, price, sku });
+
     if (isDemoMode()) {
       const cookieStore = cookies();
       cookieStore.set('demo_data', getCookiePayload(), {

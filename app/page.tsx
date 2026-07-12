@@ -22,6 +22,7 @@ export default async function HomePage() {
 
   try {
     products = await getProducts();
+    console.log('HOMEPAGE: Reading demo_data cookie, products count:', products.length);
   } catch {
     products = [];
   }
