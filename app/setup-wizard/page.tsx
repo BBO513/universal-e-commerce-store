@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { motion, AnimatePresence, animate } from 'framer-motion';
+import { useState, useCallback, useEffect } from 'react';
+import { motion, AnimatePresence, useMotionValue, useTransform, animate } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import {
   Check,
@@ -126,9 +126,10 @@ export default function SetupWizardPage() {
 
   const TOTAL = 24;
   const SECTOR = 360 / TOTAL;
-  const [rotation, setRotation] = useState(0);
-  const rotRef = useRef(0);
-  const dragRef = useRef({ x: 0, rot: 0, active: false });
+  const SENSITIVITY = 0.5;
+
+  const x = useMotionValue(0);
+  const rotation = useTransform(x, (v) => v * SENSITIVITY);
 
   const getFrontIndex = (deg: number) => {
     const n = ((deg % 360) + 360) % 360;
@@ -139,45 +140,18 @@ export default function SetupWizardPage() {
     if (step === 1) {
       const idx = WHEEL_COLORS.findIndex((c) => c.value === wizardData.primaryColor);
       if (idx >= 0) {
-        const deg = idx * SECTOR;
-        rotRef.current = deg;
-        setRotation(deg);
+        x.set((idx * SECTOR) / SENSITIVITY);
       }
     }
   }, [step]);
 
-  const handlePointerDown = (e: React.PointerEvent) => {
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
-    dragRef.current = { x: e.clientX, rot: rotRef.current, active: true };
-  };
-
-  const handlePointerMove = (e: React.PointerEvent) => {
-    if (!dragRef.current.active) return;
-    const dx = e.clientX - dragRef.current.x;
-    const newRot = dragRef.current.rot + dx * 0.6;
-    rotRef.current = newRot;
-    setRotation(newRot);
-  };
-
-  const handlePointerUp = () => {
-    dragRef.current.active = false;
-    const startRot = rotRef.current;
-    const nearestDeg = Math.round(startRot / SECTOR) * SECTOR;
-    const targetDelta = nearestDeg - startRot;
-    animate(0, targetDelta, {
-      type: 'spring',
-      stiffness: 80,
-      damping: 18,
-      mass: 0.4,
-      onUpdate: (delta) => setRotation(startRot + delta),
-      onComplete: () => {
-        const finalRot = nearestDeg;
-        rotRef.current = finalRot;
-        setRotation(finalRot);
-        const idx = getFrontIndex(finalRot);
-        updateField('primaryColor', WHEEL_COLORS[idx].value);
-      },
-    });
+  const handleDragEnd = (_: any, info: { offset: { x: number } }) => {
+    const deg = info.offset.x * SENSITIVITY;
+    const nearestDeg = Math.round(deg / SECTOR) * SECTOR;
+    const snapX = nearestDeg / SENSITIVITY;
+    animate(x, snapX, { type: 'spring', stiffness: 300, damping: 20 });
+    const idx = getFrontIndex(nearestDeg);
+    updateField('primaryColor', WHEEL_COLORS[idx].value);
   };
 
   const isStepComplete = (s: number) => {
@@ -374,91 +348,94 @@ export default function SetupWizardPage() {
                     </div>
 
                     <div className="flex flex-col items-center">
-                      {/* Outer Container — locked center, does NOT move */}
                       <div
-                        className="relative w-full h-72 flex items-center justify-center cursor-grab active:cursor-grabbing touch-none select-none"
-                        style={{ perspective: '1000px' }}
-                        onPointerDown={handlePointerDown}
-                        onPointerMove={handlePointerMove}
-                        onPointerUp={handlePointerUp}
-                        onPointerCancel={handlePointerUp}
+                        className="relative w-full h-72 flex items-center justify-center overflow-hidden"
+                        style={{ perspective: '1200px' }}
                       >
                         {/* Ambient glow */}
                         <div
-                          className="absolute w-40 h-40 rounded-full blur-[80px] opacity-40 transition-colors duration-500"
+                          className="absolute w-48 h-48 rounded-full blur-[80px] opacity-30 transition-colors duration-500 pointer-events-none"
                           style={{ backgroundColor: wizardData.primaryColor }}
                         />
 
-                        {/* Fixed selection indicator — glowing front notch */}
-                        <div className="absolute top-0 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center">
-                          <div className="w-3 h-3 rounded-full bg-white shadow-[0_0_12px_rgba(255,255,255,0.8)]" />
-                          <div className="w-0.5 h-4 bg-white/80" />
-                        </div>
-                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center">
-                          <div className="w-0.5 h-4 bg-white/80" />
-                          <div className="w-3 h-3 rounded-full bg-white shadow-[0_0_12px_rgba(255,255,255,0.8)]" />
+                        {/* Fixed glowing notch indicator */}
+                        <div className="absolute top-1 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center pointer-events-none">
+                          <div className="w-2.5 h-2.5 rounded-full bg-white shadow-[0_0_14px_rgba(255,255,255,0.9),0_0_28px_rgba(255,255,255,0.4)]" />
+                          <div className="w-px h-6 bg-gradient-to-b from-white/90 to-transparent" />
                         </div>
 
-                        {/* Inner Carousel — the only element that rotates */}
-                        <div
-                          className="absolute inset-0 flex items-center justify-center"
+                        {/* Drag overlay — the only element that moves (invisible to user due to overflow:hidden on parent) */}
+                        <motion.div
+                          drag="x"
+                          dragMomentum
+                          dragElastic={0}
+                          dragTransition={{ power: 0.18, timeConstant: 280 }}
+                          style={{ x }}
+                          onDragEnd={handleDragEnd}
+                          className="absolute inset-0 z-10 cursor-grab active:cursor-grabbing touch-none"
+                        />
+
+                        {/* Inner carousel — rotates based on useTransform(x → rotation) */}
+                        <motion.div
+                          className="absolute inset-0 flex items-center justify-center pointer-events-none"
                           style={{
+                            rotateY: rotation,
                             transformStyle: 'preserve-3d',
-                            transform: `rotateY(${rotation}deg)`,
-                            WebkitTransform: `rotateY(${rotation}deg)`,
+                            WebkitTransformStyle: 'preserve-3d',
                           }}
                         >
                           {WHEEL_COLORS.map((color, i) => {
                             const baseAngle = SECTOR * i;
-                            const chipAngle = (((baseAngle - rotation) % 360) + 360) % 360;
+                            const currentDeg = (x.get() * SENSITIVITY);
+                            const chipAngle = (((baseAngle - currentDeg) % 360) + 360) % 360;
                             const absAngle = chipAngle > 180 ? 360 - chipAngle : chipAngle;
                             const depth = Math.cos((absAngle * Math.PI) / 180);
                             const isFront = absAngle < SECTOR;
                             const isBack = absAngle > 90;
-                            const blurAmount = isBack ? (absAngle - 90) * 0.04 : 0;
+                            const blurAmount = isBack ? (absAngle - 90) * 0.05 : 0;
                             const opacity = 0.1 + depth * 0.9;
-                            const scale = 0.35 + depth * 0.65;
+                            const scale = 0.3 + depth * 0.7;
 
                             return (
                               <div
                                 key={i}
                                 className="absolute"
                                 style={{
-                                  transform: `rotateY(${baseAngle}deg) translateZ(250px)`,
-                                  WebkitTransform: `rotateY(${baseAngle}deg) translateZ(250px)`,
+                                  transform: `rotateY(${baseAngle}deg) translateZ(350px)`,
+                                  WebkitTransform: `rotateY(${baseAngle}deg) translateZ(350px)`,
                                 }}
                               >
                                 <div
-                                  className="rounded-full transition-shadow duration-200"
+                                  className="rounded-full"
                                   style={{
-                                    width: `${36 + scale * 28}px`,
-                                    height: `${36 + scale * 28}px`,
+                                    width: `${34 + scale * 30}px`,
+                                    height: `${34 + scale * 30}px`,
                                     opacity,
                                     filter: blurAmount > 0 ? `blur(${blurAmount.toFixed(1)}px)` : undefined,
                                     backgroundColor: color.value,
                                     boxShadow: isFront
-                                      ? `0 0 40px ${color.value}80, 0 0 80px ${color.value}25, 0 6px 20px rgba(0,0,0,0.35)`
-                                      : '0 2px 6px rgba(0,0,0,0.15)',
+                                      ? `0 0 50px ${color.value}90, 0 0 100px ${color.value}30, 0 8px 24px rgba(0,0,0,0.4)`
+                                      : absAngle < 30
+                                      ? `0 0 20px ${color.value}40, 0 2px 8px rgba(0,0,0,0.2)`
+                                      : '0 1px 4px rgba(0,0,0,0.1)',
                                     border: isFront
                                       ? '3px solid rgba(255,255,255,0.95)'
-                                      : '1px solid rgba(255,255,255,0.25)',
+                                      : '1px solid rgba(255,255,255,0.2)',
                                     transform: `scale(${scale})`,
                                   }}
                                 />
                               </div>
                             );
                           })}
-                        </div>
+                        </motion.div>
                       </div>
 
-                      {/* Color name label */}
-                      <motion.p
+                      <p
                         className="mt-4 text-sm font-bold tracking-widest uppercase"
-                        animate={{ color: wizardData.primaryColor }}
-                        transition={{ duration: 0.4 }}
+                        style={{ color: wizardData.primaryColor }}
                       >
-                        {WHEEL_COLORS[getFrontIndex(rotation)]?.name}
-                      </motion.p>
+                        {WHEEL_COLORS[getFrontIndex(x.get() * SENSITIVITY)]?.name}
+                      </p>
                     </div>
                   </div>
                 )}
