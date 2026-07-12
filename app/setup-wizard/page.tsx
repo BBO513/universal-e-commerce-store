@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useCallback, useEffect } from 'react';
+import { motion, AnimatePresence, useMotionValue, animate } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import {
   Check,
@@ -122,14 +122,13 @@ export default function SetupWizardPage() {
 
   const TOTAL = 20;
   const SECTOR = 360 / TOTAL;
-  const angleRef = useRef(0);
-  const [wheelDisplay, setWheelDisplay] = useState(0);
-  const isDraggingRef = useRef(false);
-  const dragRef = useRef({ startX: 0, startAngle: 0, lastX: 0, lastTime: 0, velocity: 0 });
-  const lastSelectedRef = useRef(0);
+  const SENSITIVITY = 1.5;
 
-  const getFrontIndex = (angle: number) => {
-    const n = ((angle % 360) + 360) % 360;
+  const dragX = useMotionValue(0);
+  const [rotation, setRotation] = useState(0);
+
+  const getFrontIndex = (deg: number) => {
+    const n = ((deg % 360) + 360) % 360;
     return Math.round(n / SECTOR) % TOTAL;
   };
 
@@ -137,69 +136,28 @@ export default function SetupWizardPage() {
     if (step === 1) {
       const idx = WHEEL_COLORS.findIndex((c) => c.value === wizardData.primaryColor);
       if (idx >= 0) {
-        angleRef.current = idx * SECTOR;
-        setWheelDisplay(idx * SECTOR);
-        lastSelectedRef.current = idx;
+        const deg = idx * SECTOR;
+        dragX.set(deg / SENSITIVITY);
+        setRotation(deg);
       }
     }
   }, [step]);
 
-  useEffect(() => {
-    let frame: number;
-    const loop = () => {
-      if (!isDraggingRef.current) {
-        const vel = dragRef.current.velocity;
-        if (Math.abs(vel) > 0.05) {
-          angleRef.current += vel;
-          dragRef.current.velocity *= 0.92;
-        } else {
-          const n = ((angleRef.current % 360) + 360) % 360;
-          const nearest = Math.round(n / SECTOR) * SECTOR;
-          const diff = nearest - n;
-          if (Math.abs(diff) > 0.05) {
-            angleRef.current += diff * 0.25;
-          } else {
-            angleRef.current = angleRef.current - n + nearest;
-          }
-          const frontIdx = getFrontIndex(angleRef.current);
-          if (frontIdx !== lastSelectedRef.current) {
-            lastSelectedRef.current = frontIdx;
-            updateField('primaryColor', WHEEL_COLORS[frontIdx].value);
-          }
-        }
-        setWheelDisplay(angleRef.current);
-      }
-      frame = requestAnimationFrame(loop);
-    };
-    frame = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(frame);
-  }, []);
+  const handleDragEnd = (_: any, info: { offset: { x: number } }) => {
+    const deg = info.offset.x * SENSITIVITY;
+    const nearestDeg = Math.round(deg / SECTOR) * SECTOR;
+    const snapX = nearestDeg / SENSITIVITY;
 
-  const handlePointerDown = (e: React.PointerEvent) => {
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
-    isDraggingRef.current = true;
-    dragRef.current.startX = e.clientX;
-    dragRef.current.startAngle = angleRef.current;
-    dragRef.current.lastX = e.clientX;
-    dragRef.current.lastTime = performance.now();
-    dragRef.current.velocity = 0;
-  };
+    animate(dragX, snapX, {
+      type: 'spring',
+      stiffness: 100,
+      damping: 16,
+      mass: 0.3,
+      onUpdate: (latest) => setRotation(latest * SENSITIVITY),
+    });
 
-  const handlePointerMove = (e: React.PointerEvent) => {
-    if (!isDraggingRef.current) return;
-    const dx = e.clientX - dragRef.current.lastX;
-    const now = performance.now();
-    const dt = now - dragRef.current.lastTime;
-    if (dt > 0) dragRef.current.velocity = (dx / dt) * 16;
-    dragRef.current.lastX = e.clientX;
-    dragRef.current.lastTime = now;
-    angleRef.current = dragRef.current.startAngle + (e.clientX - dragRef.current.startX) * 0.55;
-    setWheelDisplay(angleRef.current);
-  };
-
-  const handlePointerUp = (e: React.PointerEvent) => {
-    (e.target as HTMLElement).releasePointerCapture(e.pointerId);
-    isDraggingRef.current = false;
+    const idx = getFrontIndex(nearestDeg);
+    updateField('primaryColor', WHEEL_COLORS[idx].value);
   };
 
   const isStepComplete = (s: number) => {
@@ -377,7 +335,7 @@ export default function SetupWizardPage() {
 
                 {/* Step 1: Theme Colors */}
                 {step === 1 && (
-                  <div className="space-y-8">
+                  <div className="space-y-6">
                     <div className="flex items-center gap-3">
                       <div
                         className="w-12 h-12 rounded-2xl flex items-center justify-center"
@@ -390,91 +348,133 @@ export default function SetupWizardPage() {
                           Pick a color
                         </h2>
                         <p className="text-slate-500 dark:text-slate-400 text-sm">
-                          Spin the wheel to find your vibe.
+                          Flick the wheel to find your vibe.
                         </p>
                       </div>
                     </div>
 
                     <div className="flex flex-col items-center">
                       <div
-                        className="relative w-full h-72 flex items-center justify-center select-none touch-none cursor-grab active:cursor-grabbing"
-                        style={{ perspective: '800px' }}
-                        onPointerDown={handlePointerDown}
-                        onPointerMove={handlePointerMove}
-                        onPointerUp={handlePointerUp}
-                        onPointerCancel={handlePointerUp}
+                        className="relative w-full h-72 flex items-center justify-center cursor-grab active:cursor-grabbing"
+                        style={{ perspective: '900px' }}
                       >
-                        {/* Glow behind front chip */}
+                        {/* Ambient glow behind wheel */}
                         <div
-                          className="absolute w-24 h-24 rounded-full blur-3xl opacity-40 transition-colors duration-300"
+                          className="absolute w-32 h-32 rounded-full blur-[60px] opacity-50 transition-colors duration-500"
                           style={{ backgroundColor: wizardData.primaryColor }}
                         />
-                        {/* Center indicator dot */}
-                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1.5 h-4 bg-white/90 dark:bg-white/70 rounded-full z-10 shadow-sm" />
-                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1.5 h-4 bg-white/90 dark:bg-white/70 rounded-full z-10 shadow-sm" />
+                        {/* Top/bottom alignment indicators */}
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1 h-5 bg-white/80 dark:bg-white/60 rounded-full z-10 shadow-sm" />
+                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-5 bg-white/80 dark:bg-white/60 rounded-full z-10 shadow-sm" />
 
-                        <div
-                          className="absolute inset-0 flex items-center justify-center"
-                          style={{
-                            transformStyle: 'preserve-3d',
-                            transform: `rotateY(${wheelDisplay}deg)`,
-                          }}
+                        {/* Draggable wheel surface */}
+                        <motion.div
+                          drag="x"
+                          dragMomentum
+                          dragElastic={0}
+                          dragTransition={{ power: 0.12, timeConstant: 350 }}
+                          style={{ x: dragX }}
+                          onDrag={(_, info) => setRotation(info.offset.x * SENSITIVITY)}
+                          onDragEnd={handleDragEnd}
+                          className="absolute inset-0 flex items-center justify-center touch-none select-none"
+                          whileTap={{ cursor: 'grabbing' }}
                         >
-                          {WHEEL_COLORS.map((color, i) => {
-                            const rotY = SECTOR * i;
-                            const chipAngle = (((rotY - wheelDisplay) % 360) + 360) % 360;
-                            const absAngle = chipAngle > 180 ? 360 - chipAngle : chipAngle;
-                            const depth = Math.cos((absAngle * Math.PI) / 180);
-                            const scale = 0.4 + depth * 0.6;
-                            const opacity = 0.1 + depth * 0.9;
-                            const isFront = absAngle < SECTOR;
+                          <div
+                            className="absolute inset-0 flex items-center justify-center"
+                            style={{
+                              transformStyle: 'preserve-3d',
+                              transform: `rotateY(${rotation}deg) translate3d(0,0,0)`,
+                              WebkitTransform: `rotateY(${rotation}deg) translate3d(0,0,0)`,
+                            }}
+                          >
+                            {WHEEL_COLORS.map((color, i) => {
+                              const baseAngle = SECTOR * i;
+                              const chipAngle = (((baseAngle - rotation) % 360) + 360) % 360;
+                              const absAngle = chipAngle > 180 ? 360 - chipAngle : chipAngle;
+                              const depth = Math.cos((absAngle * Math.PI) / 180);
+                              const scale = 0.35 + depth * 0.65;
+                              const opacity = 0.08 + depth * 0.92;
+                              const isFront = absAngle < SECTOR * 0.75;
+                              const isBack = absAngle > 90;
+                              const blurAmount = isBack ? (absAngle - 90) * 0.06 : 0;
 
-                            return (
-                              <div
-                                key={i}
-                                className="absolute"
-                                style={{
-                                  transform: `rotateY(${rotY}deg) translateZ(160px)`,
-                                  backfaceVisibility: 'hidden',
-                                  WebkitBackfaceVisibility: 'hidden',
-                                }}
-                              >
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    angleRef.current = i * SECTOR;
-                                    setWheelDisplay(i * SECTOR);
-                                    lastSelectedRef.current = i;
-                                    updateField('primaryColor', color.value);
-                                  }}
-                                  className="rounded-full transition-shadow"
+                              return (
+                                <div
+                                  key={i}
+                                  className="absolute"
                                   style={{
-                                    width: `${36 + scale * 28}px`,
-                                    height: `${36 + scale * 28}px`,
-                                    backgroundColor: color.value,
-                                    opacity,
-                                    boxShadow: isFront
-                                      ? `0 0 40px ${color.value}80, 0 0 80px ${color.value}30, 0 6px 16px rgba(0,0,0,0.35)`
-                                      : '0 2px 6px rgba(0,0,0,0.15)',
-                                    border: isFront
-                                      ? '3px solid rgba(255,255,255,0.95)'
-                                      : '1.5px solid rgba(255,255,255,0.3)',
-                                    transform: `scale(${scale})`,
+                                    transform: `rotateY(${baseAngle}deg) translateZ(190px) translate3d(0,0,0)`,
+                                    WebkitTransform: `rotateY(${baseAngle}deg) translateZ(190px) translate3d(0,0,0)`,
                                   }}
-                                  aria-label={color.name}
-                                />
-                              </div>
-                            );
-                          })}
-                        </div>
+                                >
+                                  <div
+                                    className="relative rounded-full"
+                                    style={{
+                                      width: `${36 + scale * 30}px`,
+                                      height: `${36 + scale * 30}px`,
+                                      opacity,
+                                      filter: blurAmount > 0 ? `blur(${blurAmount.toFixed(1)}px)` : undefined,
+                                      transform: `scale(${scale})`,
+                                      transition: 'filter 0.1s ease',
+                                    }}
+                                  >
+                                    {/* Color circle */}
+                                    <div
+                                      className="absolute inset-0 rounded-full"
+                                      style={{ backgroundColor: color.value }}
+                                    />
+                                    {/* Glassmorphism sheen for front chip */}
+                                    {isFront && (
+                                      <>
+                                        <div
+                                          className="absolute inset-0 rounded-full"
+                                          style={{
+                                            background: `linear-gradient(135deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.1) 40%, transparent 60%, rgba(0,0,0,0.15) 100%)`,
+                                          }}
+                                        />
+                                        <div
+                                          className="absolute top-[12%] left-[20%] w-[30%] h-[20%] rounded-full"
+                                          style={{
+                                            background: 'radial-gradient(ellipse, rgba(255,255,255,0.6) 0%, transparent 70%)',
+                                          }}
+                                        />
+                                      </>
+                                    )}
+                                    {/* Shadow ring for front chip */}
+                                    <div
+                                      className="absolute inset-0 rounded-full"
+                                      style={{
+                                        boxShadow: isFront
+                                          ? `0 0 50px ${color.value}70, 0 0 100px ${color.value}20, 0 8px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.5)`
+                                          : absAngle < 45
+                                          ? `0 0 20px ${color.value}30, 0 2px 8px rgba(0,0,0,0.2)`
+                                          : '0 1px 4px rgba(0,0,0,0.1)',
+                                      }}
+                                    />
+                                    {/* White border ring for front chip */}
+                                    <div
+                                      className="absolute inset-0 rounded-full"
+                                      style={{
+                                        border: isFront
+                                          ? '2.5px solid rgba(255,255,255,0.9)'
+                                          : '1px solid rgba(255,255,255,0.25)',
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </motion.div>
                       </div>
 
-                      <p
-                        className="mt-3 text-sm font-semibold tracking-wide transition-colors duration-300"
-                        style={{ color: wizardData.primaryColor }}
+                      <motion.p
+                        className="mt-4 text-sm font-bold tracking-widest uppercase"
+                        animate={{ color: wizardData.primaryColor }}
+                        transition={{ duration: 0.4 }}
                       >
-                        {WHEEL_COLORS[getFrontIndex(wheelDisplay)]?.name}
-                      </p>
+                        {WHEEL_COLORS[getFrontIndex(rotation)]?.name}
+                      </motion.p>
                     </div>
                   </div>
                 )}
