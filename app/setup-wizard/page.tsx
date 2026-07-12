@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
-import { motion, AnimatePresence, useMotionValue, animate } from 'framer-motion';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { motion, AnimatePresence, animate } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import {
   Check,
@@ -46,6 +46,10 @@ const WHEEL_COLORS = [
   { name: 'Ruby',      value: '#B71C1C' },
   { name: 'Slate',     value: '#546E7A' },
   { name: 'Graphite',  value: '#37474F' },
+  { name: 'Cerulean',  value: '#007BA7' },
+  { name: 'Orchid',    value: '#DA70D6' },
+  { name: 'Saffron',   value: '#F4C430' },
+  { name: 'Jade',      value: '#00A86B' },
 ];
 
 const SOCIAL_PLATFORMS = [
@@ -120,12 +124,11 @@ export default function SetupWizardPage() {
     }
   };
 
-  const TOTAL = 20;
+  const TOTAL = 24;
   const SECTOR = 360 / TOTAL;
-  const SENSITIVITY = 1.5;
-
-  const dragX = useMotionValue(0);
   const [rotation, setRotation] = useState(0);
+  const rotRef = useRef(0);
+  const dragRef = useRef({ x: 0, rot: 0, active: false });
 
   const getFrontIndex = (deg: number) => {
     const n = ((deg % 360) + 360) % 360;
@@ -137,27 +140,44 @@ export default function SetupWizardPage() {
       const idx = WHEEL_COLORS.findIndex((c) => c.value === wizardData.primaryColor);
       if (idx >= 0) {
         const deg = idx * SECTOR;
-        dragX.set(deg / SENSITIVITY);
+        rotRef.current = deg;
         setRotation(deg);
       }
     }
   }, [step]);
 
-  const handleDragEnd = (_: any, info: { offset: { x: number } }) => {
-    const deg = info.offset.x * SENSITIVITY;
-    const nearestDeg = Math.round(deg / SECTOR) * SECTOR;
-    const snapX = nearestDeg / SENSITIVITY;
+  const handlePointerDown = (e: React.PointerEvent) => {
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    dragRef.current = { x: e.clientX, rot: rotRef.current, active: true };
+  };
 
-    animate(dragX, snapX, {
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!dragRef.current.active) return;
+    const dx = e.clientX - dragRef.current.x;
+    const newRot = dragRef.current.rot + dx * 0.6;
+    rotRef.current = newRot;
+    setRotation(newRot);
+  };
+
+  const handlePointerUp = () => {
+    dragRef.current.active = false;
+    const startRot = rotRef.current;
+    const nearestDeg = Math.round(startRot / SECTOR) * SECTOR;
+    const targetDelta = nearestDeg - startRot;
+    animate(0, targetDelta, {
       type: 'spring',
-      stiffness: 100,
-      damping: 16,
-      mass: 0.3,
-      onUpdate: (latest) => setRotation(latest * SENSITIVITY),
+      stiffness: 80,
+      damping: 18,
+      mass: 0.4,
+      onUpdate: (delta) => setRotation(startRot + delta),
+      onComplete: () => {
+        const finalRot = nearestDeg;
+        rotRef.current = finalRot;
+        setRotation(finalRot);
+        const idx = getFrontIndex(finalRot);
+        updateField('primaryColor', WHEEL_COLORS[idx].value);
+      },
     });
-
-    const idx = getFrontIndex(nearestDeg);
-    updateField('primaryColor', WHEEL_COLORS[idx].value);
   };
 
   const isStepComplete = (s: number) => {
@@ -354,120 +374,84 @@ export default function SetupWizardPage() {
                     </div>
 
                     <div className="flex flex-col items-center">
+                      {/* Outer Container — locked center, does NOT move */}
                       <div
-                        className="relative w-full h-72 flex items-center justify-center cursor-grab active:cursor-grabbing"
-                        style={{ perspective: '900px' }}
+                        className="relative w-full h-72 flex items-center justify-center cursor-grab active:cursor-grabbing touch-none select-none"
+                        style={{ perspective: '1000px' }}
+                        onPointerDown={handlePointerDown}
+                        onPointerMove={handlePointerMove}
+                        onPointerUp={handlePointerUp}
+                        onPointerCancel={handlePointerUp}
                       >
-                        {/* Ambient glow behind wheel */}
+                        {/* Ambient glow */}
                         <div
-                          className="absolute w-32 h-32 rounded-full blur-[60px] opacity-50 transition-colors duration-500"
+                          className="absolute w-40 h-40 rounded-full blur-[80px] opacity-40 transition-colors duration-500"
                           style={{ backgroundColor: wizardData.primaryColor }}
                         />
-                        {/* Top/bottom alignment indicators */}
-                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1 h-5 bg-white/80 dark:bg-white/60 rounded-full z-10 shadow-sm" />
-                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-5 bg-white/80 dark:bg-white/60 rounded-full z-10 shadow-sm" />
 
-                        {/* Draggable wheel surface */}
-                        <motion.div
-                          drag="x"
-                          dragMomentum
-                          dragElastic={0}
-                          dragTransition={{ power: 0.12, timeConstant: 350 }}
-                          style={{ x: dragX }}
-                          onDrag={(_, info) => setRotation(info.offset.x * SENSITIVITY)}
-                          onDragEnd={handleDragEnd}
-                          className="absolute inset-0 flex items-center justify-center touch-none select-none"
-                          whileTap={{ cursor: 'grabbing' }}
+                        {/* Fixed selection indicator — glowing front notch */}
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center">
+                          <div className="w-3 h-3 rounded-full bg-white shadow-[0_0_12px_rgba(255,255,255,0.8)]" />
+                          <div className="w-0.5 h-4 bg-white/80" />
+                        </div>
+                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center">
+                          <div className="w-0.5 h-4 bg-white/80" />
+                          <div className="w-3 h-3 rounded-full bg-white shadow-[0_0_12px_rgba(255,255,255,0.8)]" />
+                        </div>
+
+                        {/* Inner Carousel — the only element that rotates */}
+                        <div
+                          className="absolute inset-0 flex items-center justify-center"
+                          style={{
+                            transformStyle: 'preserve-3d',
+                            transform: `rotateY(${rotation}deg)`,
+                            WebkitTransform: `rotateY(${rotation}deg)`,
+                          }}
                         >
-                          <div
-                            className="absolute inset-0 flex items-center justify-center"
-                            style={{
-                              transformStyle: 'preserve-3d',
-                              transform: `rotateY(${rotation}deg) translate3d(0,0,0)`,
-                              WebkitTransform: `rotateY(${rotation}deg) translate3d(0,0,0)`,
-                            }}
-                          >
-                            {WHEEL_COLORS.map((color, i) => {
-                              const baseAngle = SECTOR * i;
-                              const chipAngle = (((baseAngle - rotation) % 360) + 360) % 360;
-                              const absAngle = chipAngle > 180 ? 360 - chipAngle : chipAngle;
-                              const depth = Math.cos((absAngle * Math.PI) / 180);
-                              const scale = 0.35 + depth * 0.65;
-                              const opacity = 0.08 + depth * 0.92;
-                              const isFront = absAngle < SECTOR * 0.75;
-                              const isBack = absAngle > 90;
-                              const blurAmount = isBack ? (absAngle - 90) * 0.06 : 0;
+                          {WHEEL_COLORS.map((color, i) => {
+                            const baseAngle = SECTOR * i;
+                            const chipAngle = (((baseAngle - rotation) % 360) + 360) % 360;
+                            const absAngle = chipAngle > 180 ? 360 - chipAngle : chipAngle;
+                            const depth = Math.cos((absAngle * Math.PI) / 180);
+                            const isFront = absAngle < SECTOR;
+                            const isBack = absAngle > 90;
+                            const blurAmount = isBack ? (absAngle - 90) * 0.04 : 0;
+                            const opacity = 0.1 + depth * 0.9;
+                            const scale = 0.35 + depth * 0.65;
 
-                              return (
+                            return (
+                              <div
+                                key={i}
+                                className="absolute"
+                                style={{
+                                  transform: `rotateY(${baseAngle}deg) translateZ(250px)`,
+                                  WebkitTransform: `rotateY(${baseAngle}deg) translateZ(250px)`,
+                                }}
+                              >
                                 <div
-                                  key={i}
-                                  className="absolute"
+                                  className="rounded-full transition-shadow duration-200"
                                   style={{
-                                    transform: `rotateY(${baseAngle}deg) translateZ(190px) translate3d(0,0,0)`,
-                                    WebkitTransform: `rotateY(${baseAngle}deg) translateZ(190px) translate3d(0,0,0)`,
+                                    width: `${36 + scale * 28}px`,
+                                    height: `${36 + scale * 28}px`,
+                                    opacity,
+                                    filter: blurAmount > 0 ? `blur(${blurAmount.toFixed(1)}px)` : undefined,
+                                    backgroundColor: color.value,
+                                    boxShadow: isFront
+                                      ? `0 0 40px ${color.value}80, 0 0 80px ${color.value}25, 0 6px 20px rgba(0,0,0,0.35)`
+                                      : '0 2px 6px rgba(0,0,0,0.15)',
+                                    border: isFront
+                                      ? '3px solid rgba(255,255,255,0.95)'
+                                      : '1px solid rgba(255,255,255,0.25)',
+                                    transform: `scale(${scale})`,
                                   }}
-                                >
-                                  <div
-                                    className="relative rounded-full"
-                                    style={{
-                                      width: `${36 + scale * 30}px`,
-                                      height: `${36 + scale * 30}px`,
-                                      opacity,
-                                      filter: blurAmount > 0 ? `blur(${blurAmount.toFixed(1)}px)` : undefined,
-                                      transform: `scale(${scale})`,
-                                      transition: 'filter 0.1s ease',
-                                    }}
-                                  >
-                                    {/* Color circle */}
-                                    <div
-                                      className="absolute inset-0 rounded-full"
-                                      style={{ backgroundColor: color.value }}
-                                    />
-                                    {/* Glassmorphism sheen for front chip */}
-                                    {isFront && (
-                                      <>
-                                        <div
-                                          className="absolute inset-0 rounded-full"
-                                          style={{
-                                            background: `linear-gradient(135deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.1) 40%, transparent 60%, rgba(0,0,0,0.15) 100%)`,
-                                          }}
-                                        />
-                                        <div
-                                          className="absolute top-[12%] left-[20%] w-[30%] h-[20%] rounded-full"
-                                          style={{
-                                            background: 'radial-gradient(ellipse, rgba(255,255,255,0.6) 0%, transparent 70%)',
-                                          }}
-                                        />
-                                      </>
-                                    )}
-                                    {/* Shadow ring for front chip */}
-                                    <div
-                                      className="absolute inset-0 rounded-full"
-                                      style={{
-                                        boxShadow: isFront
-                                          ? `0 0 50px ${color.value}70, 0 0 100px ${color.value}20, 0 8px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.5)`
-                                          : absAngle < 45
-                                          ? `0 0 20px ${color.value}30, 0 2px 8px rgba(0,0,0,0.2)`
-                                          : '0 1px 4px rgba(0,0,0,0.1)',
-                                      }}
-                                    />
-                                    {/* White border ring for front chip */}
-                                    <div
-                                      className="absolute inset-0 rounded-full"
-                                      style={{
-                                        border: isFront
-                                          ? '2.5px solid rgba(255,255,255,0.9)'
-                                          : '1px solid rgba(255,255,255,0.25)',
-                                      }}
-                                    />
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </motion.div>
+                                />
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
 
+                      {/* Color name label */}
                       <motion.p
                         className="mt-4 text-sm font-bold tracking-widest uppercase"
                         animate={{ color: wizardData.primaryColor }}
