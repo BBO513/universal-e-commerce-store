@@ -93,6 +93,21 @@ export default function SetupWizardPage() {
     setStep((prev) => Math.max(prev - 1, 0));
   };
 
+  const handleFinish = async () => {
+    setIsSaving(true);
+    const fd = new FormData();
+    fd.append('storeName', wizardData.storeName || 'My Store');
+    fd.append('primaryColor', wizardData.primaryColor);
+    fd.append('socialLinks', JSON.stringify(wizardData.socialLinks));
+    const result = await saveWizardSettings(fd);
+    if (result.success) {
+      router.push('/');
+    } else {
+      alert('Failed to save: ' + (result.error || 'Unknown error'));
+      setIsSaving(false);
+    }
+  };
+
   const isStepComplete = (s: number) => {
     switch (s) {
       case 0: return wizardData.storeName.trim().length > 0;
@@ -110,7 +125,7 @@ export default function SetupWizardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex flex-col items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex flex-col items-center justify-center px-4 pt-12 pb-28">
       <div className="w-full max-w-2xl">
         {/* Progress Stepper */}
         <div className="mb-12">
@@ -209,6 +224,13 @@ export default function SetupWizardPage() {
                         value={wizardData.storeName}
                         onChange={(e) => updateField('storeName', e.target.value)}
                         placeholder='e.g. "Nova Threads" or "Gear Lab"'
+                        enterKeyHint="done"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && wizardData.storeName.trim()) {
+                            e.preventDefault();
+                            nextStep();
+                          }
+                        }}
                         className="w-full px-5 py-4 text-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-opacity-50 transition-shadow"
                         style={{ '--tw-ring-color': wizardData.primaryColor } as React.CSSProperties}
                         autoFocus
@@ -337,7 +359,7 @@ export default function SetupWizardPage() {
                             className={`flex items-center gap-4 p-4 rounded-2xl border transition-all ${
                               isConnected
                                 ? 'border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20'
-                                : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/30 hover:border-slate-300 dark:hover:border-slate-600'
+                                : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/30'
                             }`}
                           >
                             <div
@@ -377,14 +399,13 @@ export default function SetupWizardPage() {
                               </motion.div>
                             ) : (
                               <motion.button
-                                whileHover={{ scale: 1.03 }}
                                 whileTap={{ scale: 0.97 }}
                                 onClick={() => handleConnect(platform.id)}
                                 disabled={isLoading}
                                 className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 ${
                                   isLoading
                                     ? 'bg-slate-200 dark:bg-slate-700 text-slate-500 cursor-wait'
-                                    : 'text-white hover:shadow-lg'
+                                    : 'text-white'
                                 }`}
                                 style={isLoading ? {} : { backgroundColor: platform.color }}
                               >
@@ -459,7 +480,6 @@ export default function SetupWizardPage() {
                             </motion.div>
                           ) : (
                             <motion.button
-                              whileHover={{ scale: 1.03 }}
                               whileTap={{ scale: 0.97 }}
                               onClick={() => {
                                 setConnecting('stripe');
@@ -468,7 +488,7 @@ export default function SetupWizardPage() {
                                   updateField('stripeConnected', true);
                                 }, 2000);
                               }}
-                              className="w-full max-w-sm bg-gradient-to-r from-[#635BFF] via-[#7B6FFF] to-[#9180FF] text-white font-semibold text-base py-4 px-6 rounded-2xl shadow-lg shadow-[#635BFF]/25 hover:shadow-[#635BFF]/40 transition-shadow flex items-center justify-center gap-3"
+                              className="w-full max-w-sm bg-gradient-to-r from-[#635BFF] via-[#7B6FFF] to-[#9180FF] text-white font-semibold text-base py-4 px-6 rounded-2xl shadow-lg shadow-[#635BFF]/25 transition-shadow flex items-center justify-center gap-3"
                             >
                               <svg
                                 className="w-6 h-6"
@@ -545,74 +565,56 @@ export default function SetupWizardPage() {
               </motion.div>
             </AnimatePresence>
           </div>
+        </div>
+      </div>
 
-          {/* Navigation */}
-          <div className="flex items-center justify-between px-8 md:px-10 pb-8 md:pb-10">
-            <button
-              onClick={prevStep}
-              disabled={step === 0}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                step === 0
-                  ? 'text-slate-300 dark:text-slate-600 cursor-not-allowed'
-                  : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
-              }`}
+      {/* Navigation - Fixed Bottom */}
+      <div className="fixed bottom-0 left-0 right-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800">
+        <div className="flex items-center gap-3 px-4 py-4 w-full max-w-2xl mx-auto">
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={prevStep}
+            disabled={step === 0}
+            className={`flex items-center justify-center w-12 h-12 rounded-2xl flex-shrink-0 transition-opacity ${
+              step === 0
+                ? 'opacity-0 pointer-events-none'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+            }`}
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </motion.button>
+
+          {step < STEPS.length - 1 ? (
+            <motion.button
+              whileTap={{ scale: 0.98 }}
+              onClick={nextStep}
+              disabled={!isStepComplete(step)}
+              className="flex-1 h-14 rounded-2xl text-lg font-bold text-white flex items-center justify-center gap-2 disabled:opacity-40"
+              style={{
+                backgroundColor: isStepComplete(step) ? wizardData.primaryColor : '#94A3B8',
+              }}
             >
-              <ChevronLeft className="w-4 h-4" />
-              Back
-            </button>
-
-            {step < STEPS.length - 1 ? (
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={nextStep}
-                disabled={!isStepComplete(step)}
-                className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                style={{
-                  backgroundColor: isStepComplete(step) ? wizardData.primaryColor : '#94A3B8',
-                }}
-              >
-                Continue
-                <ChevronRight className="w-4 h-4" />
-              </motion.button>
-            ) : (
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={async () => {
-                  setIsSaving(true);
-                  const fd = new FormData();
-                  fd.append('storeName', wizardData.storeName || 'My Store');
-                  fd.append('primaryColor', wizardData.primaryColor);
-                  fd.append('socialLinks', JSON.stringify(wizardData.socialLinks));
-                  const result = await saveWizardSettings(fd);
-                  if (result.success) {
-                    router.push('/');
-                  } else {
-                    alert('Failed to save: ' + (result.error || 'Unknown error'));
-                    setIsSaving(false);
-                  }
-                }}
-                disabled={isSaving}
-                className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-all shadow-lg ${
-                  isSaving ? 'opacity-60 cursor-wait' : ''
-                }`}
-                style={{ backgroundColor: wizardData.primaryColor }}
-              >
-                {isSaving ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4" />
-                    Finish Setup
-                  </>
-                )}
-              </motion.button>
-            )}
-          </div>
+              Continue
+              <ChevronRight className="w-5 h-5" />
+            </motion.button>
+          ) : (
+            <motion.button
+              whileTap={{ scale: 0.98 }}
+              onClick={handleFinish}
+              disabled={isSaving}
+              className="flex-1 h-14 rounded-2xl text-lg font-bold text-white flex items-center justify-center gap-2 disabled:opacity-60"
+              style={{ backgroundColor: wizardData.primaryColor }}
+            >
+              {isSaving ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <>
+                  <Sparkles className="w-5 h-5" />
+                  Finish Setup
+                </>
+              )}
+            </motion.button>
+          )}
         </div>
       </div>
     </div>
