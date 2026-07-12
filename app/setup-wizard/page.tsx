@@ -302,19 +302,19 @@ export default function SetupWizardPage() {
                     </div>
 
                     <div className="overflow-x-auto pb-2 -mx-2 px-2 scrollbar-none">
-                      <div className="flex gap-4 min-w-min">
+                      <div className="flex gap-5 min-w-min">
                         {COLOR_PALETTE.map((color) => {
                           const isSelected = wizardData.primaryColor === color.value;
                           return (
                             <motion.button
                               key={color.value}
-                              whileTap={{ scale: 1.15 }}
+                              whileTap={{ scale: 1.12 }}
                               transition={{ type: 'spring', stiffness: 400, damping: 12 }}
                               onClick={() => updateField('primaryColor', color.value)}
-                              className={`relative w-14 h-14 rounded-full flex-shrink-0 transition-shadow ${
+                              className={`relative w-20 h-20 rounded-full flex-shrink-0 border-[3px] transition-shadow ${
                                 isSelected
-                                  ? 'ring-[3px] ring-white dark:ring-slate-200 ring-offset-2 ring-offset-white/70 dark:ring-offset-slate-800/70 shadow-lg shadow-black/20'
-                                  : ''
+                                  ? 'border-white dark:border-slate-200 ring-[3px] ring-white dark:ring-slate-200 ring-offset-4 ring-offset-white/70 dark:ring-offset-slate-800/70 shadow-xl shadow-black/25'
+                                  : 'border-slate-200 dark:border-slate-600'
                               }`}
                               style={{ backgroundColor: color.value }}
                               aria-label={color.name}
@@ -325,7 +325,7 @@ export default function SetupWizardPage() {
                                   animate={{ scale: 1 }}
                                   className="absolute inset-0 flex items-center justify-center"
                                 >
-                                  <Check className="w-5 h-5 text-white drop-shadow-md" />
+                                  <Check className="w-6 h-6 text-white drop-shadow-md" />
                                 </motion.div>
                               )}
                             </motion.button>
