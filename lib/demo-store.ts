@@ -64,12 +64,31 @@ export function getCookiePayload(): string {
 export function saveToLocalStorage() {
   if (typeof window === 'undefined') return;
   try {
+    const raw = localStorage.getItem('demo_data');
+    const existing = raw ? JSON.parse(raw) : { settings: {}, products: [] };
     localStorage.setItem('demo_data', JSON.stringify({
-      settings: demoSettings,
-      products: demoProducts,
+      settings: { ...existing.settings, ...demoSettings },
+      products: demoProducts.length > 0 ? demoProducts : existing.products || [],
     }));
   } catch {
     // quota exceeded — silently ignore
+  }
+}
+
+export function addToLocalStorage(product: any) {
+  if (typeof window === 'undefined') return;
+  try {
+    const raw = localStorage.getItem('demo_data');
+    const data = raw ? JSON.parse(raw) : { settings: demoSettings, products: [] };
+    const existingIds = new Set(data.products.map((p: any) => p.id));
+    if (!existingIds.has(product.id)) {
+      data.products.unshift(product);
+      localStorage.setItem('demo_data', JSON.stringify(data));
+      demoProducts = data.products;
+      demoNextId = Math.max(demoNextId, product.id + 1);
+    }
+  } catch {
+    // ignore
   }
 }
 

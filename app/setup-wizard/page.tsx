@@ -17,7 +17,7 @@ import {
   Lock,
 } from 'lucide-react';
 import { saveWizardSettings } from './actions';
-import { saveToLocalStorage } from '@/lib/demo-store';
+import { updateDemoSettings, saveToLocalStorage } from '@/lib/demo-store';
 
 const STEPS = [
   { id: 1, label: 'Brand', icon: Store },
@@ -118,6 +118,11 @@ export default function SetupWizardPage() {
     fd.append('socialLinks', JSON.stringify(wizardData.socialLinks));
     const result = await saveWizardSettings(fd);
     if (result.success) {
+      updateDemoSettings({
+        store_name: wizardData.storeName || 'My Store',
+        primary_color: wizardData.primaryColor,
+        social_links: wizardData.socialLinks,
+      });
       saveToLocalStorage();
       router.push('/');
     } else {
