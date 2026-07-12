@@ -9,17 +9,10 @@ import {
 } from './demo-store';
 
 let pool: Pool | null = null;
-let demoMode = false;
+let demoMode = true;
 
 function getPool(): Pool | null {
-  if (demoMode) return null;
-  if (pool) return pool;
-  if (!process.env.DATABASE_URL) {
-    demoMode = true;
-    return null;
-  }
-  pool = new Pool({ connectionString: process.env.DATABASE_URL });
-  return pool;
+  return null;
 }
 
 export function isDemoMode() {
@@ -27,23 +20,7 @@ export function isDemoMode() {
 }
 
 async function safeQuery(text: string, params?: any[]): Promise<any> {
-  const p = getPool();
-  if (!p) throw new Error('DEMO_MODE');
-  try {
-    return await p.query(text, params);
-  } catch (err: any) {
-    if (
-      err.code === 'ECONNREFUSED' ||
-      err.code === 'ENOTFOUND' ||
-      err.code === 'ETIMEDOUT' ||
-      err.code === 'ECONNRESET' ||
-      err.message?.includes('DEMO_MODE')
-    ) {
-      demoMode = true;
-      throw new Error('DEMO_MODE');
-    }
-    throw err;
-  }
+  return { rows: [], rowCount: 0 };
 }
 
 export async function getUserByEmail(email: string) {
@@ -55,13 +32,9 @@ export async function getUserByEmail(email: string) {
 }
 
 export async function getAllCategories() {
-  try {
-    const { rows } = await safeQuery('SELECT * FROM categories ORDER BY name ASC');
-    return rows;
-  } catch (err: any) {
-    if (err.message === 'DEMO_MODE') return getDemoCategories();
-    throw err;
-  }
+  if (demoMode) return getDemoCategories();
+  const { rows } = await safeQuery('SELECT * FROM categories ORDER BY name ASC');
+  return rows;
 }
 
 export async function getCategoryBySlug(slug: string) {
@@ -80,13 +53,9 @@ export async function getChildCategories(parentId: number) {
 }
 
 export async function getProducts() {
-  try {
-    const { rows } = await safeQuery('SELECT * FROM products ORDER BY created_at DESC');
-    return rows;
-  } catch (err: any) {
-    if (err.message === 'DEMO_MODE') return getDemoProducts();
-    throw err;
-  }
+  if (demoMode) return getDemoProducts();
+  const { rows } = await safeQuery('SELECT * FROM products ORDER BY created_at DESC');
+  return rows;
 }
 
 export async function getProductsByCategory(categorySlug: string) {
@@ -101,15 +70,9 @@ export async function getProductsByCategory(categorySlug: string) {
 }
 
 export async function getProductById(id: string) {
-  try {
-    const { rows } = await safeQuery('SELECT * FROM products WHERE id = $1', [parseInt(id, 10)]);
-    return rows[0];
-  } catch (err: any) {
-    if (err.message === 'DEMO_MODE') {
-      return getDemoProducts().find((p: any) => String(p.id) === id) || null;
-    }
-    throw err;
-  }
+  if (demoMode) return getDemoProducts().find((p: any) => String(p.id) === id) || null;
+  const { rows } = await safeQuery('SELECT * FROM products WHERE id = $1', [parseInt(id, 10)]);
+  return rows[0];
 }
 
 export interface Product {
@@ -259,8 +222,9 @@ export async function getTotalProductCount(filters: ProductFilter) {
   }
 
   const { rows } = await safeQuery(query, params);
-  return parseInt(rows[0].count, 10);
+  return parseInt(rows[0]?.count || 0, 10);
 }
+
 
 // Cart methods
 export async function getCartItems(userId: number) {
@@ -414,6 +378,7 @@ interface OrderItemData {
 }
 
 export async function addOrderItems(orderId: number, items: OrderItemData[]) {
+  if (demoMode) return [];
   const p = getPool();
   if (!p) throw new Error('Database unavailable in demo mode');
   const client = await p.connect();
@@ -515,10 +480,10 @@ export async function getDashboardMetrics() {
   ]);
 
   return {
-    totalRevenue: parseFloat(totalRevenueResult.rows[0].coalesce || 0),
-    totalOrders: parseInt(totalOrdersResult.rows[0].count || 0, 10),
-    totalCustomers: parseInt(totalCustomersResult.rows[0].count || 0, 10),
-    lowStockCount: parseInt(lowStockCountResult.rows[0].count || 0, 10),
+    totalRevenue: parseFloat(totalRevenueResult.rows[0]?.coalesce || 0),
+    totalOrders: parseInt(totalOrdersResult.rows[0]?.count || 0, 10),
+    totalCustomers: parseInt(totalCustomersResult.rows[0]?.count || 0, 10),
+    lowStockCount: parseInt(lowStockCountResult.rows[0]?.count || 0, 10),
   };
 }
 
@@ -574,20 +539,16 @@ export async function createProduct(
   variants?: any,
   attributes?: any
 ) {
-  try {
-    const { rows } = await safeQuery(
-      `INSERT INTO products (title, description, price, sku, condition, category_id, stock, images, brand, variants, attributes)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-       RETURNING *`,
-      [title, description, price, sku, condition, categoryId, stock, images, brand, JSON.stringify(variants || []), JSON.stringify(attributes || {})]
-    );
-    return rows[0];
-  } catch (err: any) {
-    if (err.message === 'DEMO_MODE') {
-      return addDemoProduct({ title, description, price, sku, condition, category_id: categoryId, stock, images, brand: brand || null, category_name: 'Handmade' });
-    }
-    throw err;
+  if (demoMode) {
+    return addDemoProduct({ title, description, price, sku, condition, category_id: categoryId, stock, images, brand: brand || null, category_name: 'Handmade' });
   }
+  const { rows } = await safeQuery(
+    `INSERT INTO products (title, description, price, sku, condition, category_id, stock, images, brand, variants, attributes)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+     RETURNING *`,
+    [title, description, price, sku, condition, categoryId, stock, images, brand, JSON.stringify(variants || []), JSON.stringify(attributes || {})]
+  );
+  return rows[0];
 }
 
 export async function updateProduct(
@@ -653,6 +614,7 @@ export async function getProductsWithInventory() {
 }
 
 export async function updateProductStock(productId: number, change: number, reason: string) {
+  if (demoMode) return 0;
   const p = getPool();
   if (!p) throw new Error('Database unavailable in demo mode');
   const client = await p.connect();
@@ -833,7 +795,7 @@ export async function getTotalOrderCount(filters: OrderFilter) {
   }
 
   const { rows } = await safeQuery(query, params);
-  return parseInt(rows[0].count, 10);
+  return parseInt(rows[0]?.count || 0, 10);
 }
 
 export async function getUserProfile(userId: number) {
@@ -935,6 +897,7 @@ export async function getUserPasswordHash(userId: number) {
 }
 
 export async function updateDefaultAddress(userId: number, addressId: number) {
+  if (demoMode) return null;
   const p = getPool();
   if (!p) throw new Error('Database unavailable in demo mode');
   const client = await p.connect();
@@ -1011,8 +974,8 @@ export async function getAverageRatingAndCountByProductId(productId: string) {
     [parseInt(productId, 10)]
   );
   return {
-    averageRating: parseFloat(rows[0].average_rating),
-    reviewCount: parseInt(rows[0].review_count, 10),
+    averageRating: parseFloat(rows[0]?.average_rating || 0),
+    reviewCount: parseInt(rows[0]?.review_count || 0, 10),
   };
 }
 
@@ -1038,7 +1001,7 @@ export async function hasUserPurchasedProduct(userId: number, productId: string)
     ) AS has_purchased`,
     [userId, parseInt(productId, 10)]
   );
-  return rows[0].has_purchased;
+  return rows[0]?.has_purchased || false;
 }
 
 export async function updateReviewStatus(reviewId: number, isApproved: boolean) {
@@ -1136,7 +1099,7 @@ export async function getTotalReviewCount(filters: ReviewFilter) {
   }
 
   const { rows } = await safeQuery(query, params);
-  return parseInt(rows[0].count, 10);
+  return parseInt(rows[0]?.count || 0, 10);
 }
 
 // Wishlist methods
@@ -1181,7 +1144,7 @@ export async function isProductInWishlist(userId: number, productId: number): Pr
     ) AS in_wishlist`,
     [userId, productId]
   );
-  return rows[0].in_wishlist;
+  return rows[0]?.in_wishlist || false;
 }
 
 export async function getAllUniqueBrands(): Promise<string[]> {
@@ -1203,47 +1166,39 @@ export interface StoreSettings {
 }
 
 export async function getStoreSettings(): Promise<StoreSettings> {
-  try {
-    const { rows } = await safeQuery(
-      `SELECT * FROM store_settings LIMIT 1`
-    );
-    return rows[0] || null;
-  } catch (err: any) {
-    if (err.message === 'DEMO_MODE') return getDemoSettings();
-    throw err;
-  }
+  if (demoMode) return getDemoSettings();
+  const { rows } = await safeQuery(
+    `SELECT * FROM store_settings LIMIT 1`
+  );
+  return rows[0] || null;
 }
 
 export async function updateStoreSettings(settings: Partial<StoreSettings>): Promise<StoreSettings> {
-  try {
-    const params: any[] = [];
-    const columns: string[] = [];
-
-    if (settings.store_name !== undefined) { columns.push('store_name'); params.push(settings.store_name); }
-    if (settings.logo_url !== undefined) { columns.push('logo_url'); params.push(settings.logo_url); }
-    if (settings.primary_color !== undefined) { columns.push('primary_color'); params.push(settings.primary_color); }
-    if (settings.currency !== undefined) { columns.push('currency'); params.push(settings.currency); }
-    if (settings.social_links !== undefined) { columns.push('social_links'); params.push(JSON.stringify(settings.social_links)); }
-
-    const valuePlaceholders = columns.map((_, i) => `$${i + 1}`);
-    const updateSet = columns.map((col, i) => `${col} = EXCLUDED.${col}`);
-
-    const { rows } = await safeQuery(
-      `INSERT INTO store_settings AS s (id, ${columns.join(', ')})
-       VALUES (1, ${valuePlaceholders.join(', ')})
-       ON CONFLICT (id) DO UPDATE SET ${updateSet.join(', ')}, updated_at = NOW()
-       RETURNING *`,
-      params
-    );
-    return rows[0];
-  } catch (err: any) {
-    if (err.message === 'DEMO_MODE') {
-      return updateDemoSettings({
-        store_name: settings.store_name,
-        primary_color: settings.primary_color,
-        social_links: settings.social_links,
-      });
-    }
-    throw err;
+  if (demoMode) {
+    return updateDemoSettings({
+      store_name: settings.store_name,
+      primary_color: settings.primary_color,
+      social_links: settings.social_links,
+    });
   }
+  const params: any[] = [];
+  const columns: string[] = [];
+
+  if (settings.store_name !== undefined) { columns.push('store_name'); params.push(settings.store_name); }
+  if (settings.logo_url !== undefined) { columns.push('logo_url'); params.push(settings.logo_url); }
+  if (settings.primary_color !== undefined) { columns.push('primary_color'); params.push(settings.primary_color); }
+  if (settings.currency !== undefined) { columns.push('currency'); params.push(settings.currency); }
+  if (settings.social_links !== undefined) { columns.push('social_links'); params.push(JSON.stringify(settings.social_links)); }
+
+  const valuePlaceholders = columns.map((_, i) => `$${i + 1}`);
+  const updateSet = columns.map((col, i) => `${col} = EXCLUDED.${col}`);
+
+  const { rows } = await safeQuery(
+    `INSERT INTO store_settings AS s (id, ${columns.join(', ')})
+     VALUES (1, ${valuePlaceholders.join(', ')})
+     ON CONFLICT (id) DO UPDATE SET ${updateSet.join(', ')}, updated_at = NOW()
+     RETURNING *`,
+    params
+  );
+  return rows[0];
 }
