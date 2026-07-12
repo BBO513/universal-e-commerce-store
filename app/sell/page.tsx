@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Plus, Home, ShoppingBag, User, Package, Wand2 } from 'lucide-react';
+import { X, Plus, Home, ShoppingBag, User, Package } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { listItem } from './actions';
 
@@ -22,29 +22,6 @@ export default function SellPage() {
   const [isListing, setIsListing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
-
-  const MOCK_ITEMS = [
-    'Vintage Silver Wristwatch',
-    'Sony WH-1000XM5 Headphones',
-    'Ceramic Pour-Over Coffee Set',
-    'Red Nike Running Shoes',
-    'Apple Magic Keyboard',
-    'Mid-Century Desk Lamp',
-    'Polaroid Instant Camera',
-    'Mechanical Gaming Keyboard',
-    'Leather Messenger Bag',
-    'Kindle Paperwhite e-Reader',
-    'Bose Bluetooth Speaker',
-    'Retro Vinyl Record Collection',
-    'Yoga Mat + Accessories Bundle',
-    'Samsung Galaxy Tablet',
-    'Handmade Leather Journal',
-  ];
-
-  const handleMagicIdentify = () => {
-    const randomItem = MOCK_ITEMS[Math.floor(Math.random() * MOCK_ITEMS.length)];
-    setTitle(randomItem);
-  };
 
   const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -168,26 +145,14 @@ export default function SellPage() {
         style={{ minHeight: '40%' }}
       >
         {/* Title Input */}
-        <div className="border-b border-neutral-200 dark:border-neutral-800 pb-3 flex items-center gap-2">
+        <div className="border-b border-neutral-200 dark:border-neutral-800 pb-3">
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="What are you selling?"
-            className="flex-1 text-2xl font-bold bg-transparent text-black dark:text-white placeholder:text-neutral-300 dark:placeholder:text-neutral-600 outline-none"
+            className="w-full text-2xl font-bold bg-transparent text-black dark:text-white placeholder:text-neutral-300 dark:placeholder:text-neutral-600 outline-none"
           />
-          <motion.button
-            animate={
-              !title
-                ? { scale: [1, 1.12, 1], opacity: [0.6, 1, 0.6] }
-                : { scale: 1, opacity: 0.3 }
-            }
-            transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
-            onClick={handleMagicIdentify}
-            className="w-10 h-10 flex items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 text-white shadow-md shadow-purple-500/20"
-          >
-            <Wand2 className="w-5 h-5" />
-          </motion.button>
         </div>
         {/* Price Input */}
         <div className="flex items-center border-b border-neutral-200 dark:border-neutral-800 pb-3">
