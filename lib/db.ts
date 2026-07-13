@@ -1177,7 +1177,7 @@ export interface StoreSettings {
 }
 
 export async function getStoreSettings(): Promise<StoreSettings> {
-  if (demoMode) return getDemoSettings();
+  if (demoMode) return getDemoSettings() as unknown as StoreSettings;
   const { rows } = await safeQuery(
     `SELECT * FROM store_settings LIMIT 1`
   );
@@ -1186,11 +1186,11 @@ export async function getStoreSettings(): Promise<StoreSettings> {
 
 export async function updateStoreSettings(settings: Partial<StoreSettings>): Promise<StoreSettings> {
   if (demoMode) {
-    return updateDemoSettings({
+        return updateDemoSettings({
       store_name: settings.store_name,
       primary_color: settings.primary_color,
       social_links: settings.social_links,
-    });
+    }) as unknown as StoreSettings;
   }
   const params: any[] = [];
   const columns: string[] = [];

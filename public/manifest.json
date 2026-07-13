@@ -1,7 +1,7 @@
 {
-  "name": "Universal Store",
-  "short_name": "Store",
-  "description": "Your online store for high-quality products.",
+  "name": "MicroMerchant",
+  "short_name": "MicroMerchant",
+  "description": "Point-and-shoot mobile storefront. Snap, price, sell.",
   "icons": [
     {
       "src": "/icons/icon-192x192.png",
@@ -28,8 +28,28 @@
   ],
   "start_url": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "orientation": "portrait",
-  "theme_color": "#000000",
-  "background_color": "#ffffff",
-  "scope": "/"
+  "theme_color": "#0f172a",
+  "background_color": "#020617",
+  "scope": "/",
+  "categories": ["business", "shopping", "lifestyle"],
+  "screenshots": [],
+  "prefer_related_applications": false,
+  "related_applications": [],
+  "shortcuts": [
+    {
+      "name": "Sell an Item",
+      "short_name": "Sell",
+      "description": "Snap a photo and list it",
+      "url": "/sell",
+      "icons": [
+        {
+          "src": "/icons/icon-192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ]
 }

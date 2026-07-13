@@ -1,8 +1,13 @@
-import NextAuth from "next-auth";
+import NextAuth, { NextAuthOptions } from "next-auth";
+import type { JWT } from "next-auth/jwt";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcrypt";
-import { NextAuthOptions } from "next-auth";
 import { getUserRole, getUserByEmail } from "./db"; // Import getUserRole and getUserByEmail
+
+interface AuthToken extends JWT {
+  id?: string;
+  role?: string;
+}
 
 export const users: Array<{ id: string; name: string; email: string; password: string }> = [];
 
@@ -42,21 +47,27 @@ export const authOptions: NextAuthOptions = {
     signIn: "/login",
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user }): Promise<AuthToken> {
+      const authToken = token as AuthToken;
       if (user) {
-        token.id = user.id;
-        token.role = (user as any).role; // Cast user to any to access role
+        authToken.id = user.id;
+        authToken.role = (user as any).role;
       }
-      return token;
+      return authToken;
     },
     async session({ session, token }) {
-      if (token.id) {
-        session.user.id = token.id as string;
-      }
-      if (token.role) {
-        session.user.role = token.role as string;
+      const authToken = token as AuthToken;
+      if (session.user) {
+        if (authToken.id) {
+          (session.user as any).id = authToken.id;
+        }
+        if (authToken.role) {
+          (session.user as any).role = authToken.role;
+        }
       }
       return session;
     },
   },
 };
+
+export default NextAuth(authOptions);

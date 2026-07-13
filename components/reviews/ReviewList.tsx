@@ -2,12 +2,15 @@ import React from 'react';
 import StarRating from '@/components/StarRating';
 
 interface Review {
-  id: string;
+  id: number;
+  product_id: number;
+  user_id: number;
   rating: number;
   title: string;
-  content: string;
-  author: string;
-  createdAt: string;
+  comment: string;
+  is_approved: boolean;
+  created_at: string;
+  author_name: string;
 }
 
 interface ReviewListProps {
@@ -26,11 +29,11 @@ const ReviewList: React.FC<ReviewListProps> = ({ reviews }) => {
             <div key={review.id} className="border-b pb-4">
               <div className="flex items-center mb-2">
                 <StarRating rating={review.rating} />
-                <p className="ml-2 text-sm text-gray-500">{new Date(review.createdAt).toLocaleDateString()}</p>
+                <p className="ml-2 text-sm text-gray-500">{new Date(review.created_at).toLocaleDateString()}</p>
               </div>
               <h3 className="font-semibold">{review.title}</h3>
-              <p className="text-gray-700 mt-1">{review.content}</p>
-              <p className="text-sm text-gray-500 mt-2">- {review.author}</p>
+              <p className="text-gray-700 mt-1">{review.comment}</p>
+              <p className="text-sm text-gray-500 mt-2">- {review.author_name}</p>
             </div>
           ))}
         </div>

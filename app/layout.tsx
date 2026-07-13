@@ -1,17 +1,26 @@
-import { Inter, Playfair_Display } from "next/font/google";
-import Navbar from "@/components/Navbar";
+import { Inter } from "next/font/google";
 import "@/styles/globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
-const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-heading", weight: ["400", "500", "600", "700"], display: "swap" });
-
 export const metadata = {
-  title: "Universal Store",
-  description: "Premium storefront experience",
+  title: "MicroMerchant",
+  description: "Point-and-shoot mobile storefront. Snap, price, sell.",
   manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "MicroMerchant",
+    startupImage: "/icons/icon-512x512.png",
+  },
+  formatDetection: {
+    telephone: false,
+  },
   other: {
+    "mobile-web-app-capable": "yes",
+    "apple-touch-fullscreen": "yes",
     "apple-mobile-web-app-capable": "yes",
     "apple-mobile-web-app-status-bar-style": "black-translucent",
+    "msapplication-tap-highlight": "no",
   },
 };
 
@@ -21,6 +30,10 @@ export const viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#020617" },
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+  ],
 };
 
 export default function RootLayout({
@@ -30,14 +43,19 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="scroll-smooth">
-      <body className={`${inter.variable} ${playfair.variable} bg-boutique-bg text-slate-950 antialiased`}>
-        <div className="min-h-screen bg-boutique-bg">
-          <Navbar />
-          <main className="min-h-[calc(100vh-4rem)]">
+      <head>
+        {/* iOS splash screen hint */}
+        <meta name="apple-mobile-web-app-title" content="MicroMerchant" />
+        {/* Disable automatic detection of phone numbers / addresses */}
+        <meta name="format-detection" content="telephone=no,address=no,email=no" />
+      </head>
+      <body className={`${inter.variable} font-sans bg-slate-950 text-white antialiased`}>
+        {/* safe-area wrapper for notch + home indicator */}
+        <div className="flex min-h-dvh flex-col pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
             {children}
-          </main>
         </div>
       </body>
     </html>
   );
 }
+
