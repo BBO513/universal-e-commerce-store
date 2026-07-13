@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import {
@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { saveWizardSettings } from './actions';
 import { updateDemoSettings, saveToLocalStorage } from '@/lib/demo-store';
+import { ColorCylinderCarousel } from '@/components/ColorCylinderCarousel';
 
 const STEPS = [
   { id: 1, label: 'Brand', icon: Store },
@@ -26,32 +27,6 @@ const STEPS = [
   { id: 4, label: 'Payments', icon: CreditCard },
 ];
 
-const WHEEL_COLORS = [
-  { name: 'Crimson',   value: '#DC143C' },
-  { name: 'Tangerine', value: '#FF6B35' },
-  { name: 'Amber',     value: '#F5A623' },
-  { name: 'Gold',      value: '#E5A100' },
-  { name: 'Lime',      value: '#7CB342' },
-  { name: 'Emerald',   value: '#2E7D32' },
-  { name: 'Mint',      value: '#26A69A' },
-  { name: 'Teal',      value: '#00897B' },
-  { name: 'Cyan',      value: '#00ACC1' },
-  { name: 'Sky',       value: '#42A5F5' },
-  { name: 'Navy',      value: '#1565C0' },
-  { name: 'Indigo',    value: '#3949AB' },
-  { name: 'Violet',    value: '#7C3AED' },
-  { name: 'Plum',      value: '#8E24AA' },
-  { name: 'Magenta',   value: '#C2185B' },
-  { name: 'Rose',      value: '#E91E63' },
-  { name: 'Coral',     value: '#FF5252' },
-  { name: 'Ruby',      value: '#B71C1C' },
-  { name: 'Slate',     value: '#546E7A' },
-  { name: 'Graphite',  value: '#37474F' },
-  { name: 'Cerulean',  value: '#007BA7' },
-  { name: 'Orchid',    value: '#DA70D6' },
-  { name: 'Saffron',   value: '#F4C430' },
-  { name: 'Jade',      value: '#00A86B' },
-];
 
 const SOCIAL_PLATFORMS = [
   { id: 'instagram', label: 'Instagram', color: '#E4405F', prefix: '@' },
@@ -131,46 +106,6 @@ export default function SetupWizardPage() {
     }
   };
 
-  const TOTAL = 24;
-  const ITEM_SIZE = 80; // 64px chip + 16px gap
-
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
-  const [centeredIndex, setCenteredIndex] = useState(0);
-
-  const getFrontIndex = () => centeredIndex;
-
-  useEffect(() => {
-    if (step === 1) {
-      const idx = WHEEL_COLORS.findIndex((c) => c.value === wizardData.primaryColor);
-      if (idx >= 0 && scrollRef.current) {
-        requestAnimationFrame(() => {
-          scrollRef.current?.scrollTo({ left: idx * ITEM_SIZE, behavior: 'instant' as ScrollBehavior });
-          setCenteredIndex(idx);
-        });
-      }
-    }
-  }, [step]);
-
-  const handleScroll = () => {
-    if (!scrollRef.current) return;
-    const index = Math.round(scrollRef.current.scrollLeft / ITEM_SIZE);
-    const clamped = Math.max(0, Math.min(index, TOTAL - 1));
-    setCenteredIndex(clamped);
-    if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
-    scrollTimeoutRef.current = setTimeout(() => {
-      if (clamped === Math.round((scrollRef.current?.scrollLeft ?? 0) / ITEM_SIZE)) {
-        updateField('primaryColor', WHEEL_COLORS[clamped].value);
-      }
-    }, 200);
-  };
-
-  const selectColor = (index: number) => {
-    scrollRef.current?.scrollTo({ left: index * ITEM_SIZE, behavior: 'smooth' });
-    setCenteredIndex(index);
-    updateField('primaryColor', WHEEL_COLORS[index].value);
-  };
-
   const isStepComplete = (s: number) => {
     switch (s) {
       case 0: return wizardData.storeName.trim().length > 0;
@@ -186,18 +121,6 @@ export default function SetupWizardPage() {
     center: { x: 0, opacity: 1 },
     exit: (dir: number) => ({ x: dir > 0 ? -300 : 300, opacity: 0 }),
   };
-
-  useEffect(() => {
-    if (step !== 1) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        nextStep();
-      }
-    };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [step]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex flex-col items-center justify-center px-4 pt-12 pb-28">
@@ -344,7 +267,7 @@ export default function SetupWizardPage() {
                   </div>
                 )}
 
-                {/* Step 1: Theme Colors */}
+                {/* Step 1: Theme Colors — 3D Cylinder Carousel */}
                 {step === 1 && (
                   <div className="space-y-6">
                     <div className="flex items-center gap-3">
@@ -359,74 +282,18 @@ export default function SetupWizardPage() {
                           Pick a color
                         </h2>
                         <p className="text-slate-500 dark:text-slate-400 text-sm">
-                          Swipe to find your vibe.
+                          Spin the cylinder to find your vibe. Snap to confirm.
                         </p>
                       </div>
                     </div>
 
-                    <div className="flex flex-col items-center">
-                      {/* Native horizontal scroll-snap carousel */}
-                      <div
-                        ref={scrollRef}
-                        onScroll={handleScroll}
-                        className="w-full overflow-x-auto snap-x snap-mandatory scrollbar-none"
-                        style={{ WebkitOverflowScrolling: 'touch' }}
-                      >
-                        <div className="flex gap-4 items-center h-32">
-                          {/* Left spacer — allows first chip to snap to center */}
-                          <div className="flex-shrink-0 w-[calc(50%-32px)]" />
-                          {WHEEL_COLORS.map((color, i) => {
-                            const distance = Math.abs(i - centeredIndex);
-                            const isCentered = distance === 0;
-                            const scale = isCentered ? 1.25 : distance === 1 ? 0.85 : 0.7;
-                            const opacity = isCentered ? 1 : distance === 1 ? 0.55 : 0.25;
-                            const blur = distance > 1 ? `${Math.min((distance - 1) * 2, 4)}px` : '0px';
-
-                            return (
-                              <div
-                                key={i}
-                                className="snap-center flex-shrink-0 flex items-center justify-center"
-                                style={{
-                                  width: '64px',
-                                  height: '64px',
-                                  transition: 'transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.35s ease, filter 0.35s ease',
-                                  transform: `scale(${scale})`,
-                                  opacity,
-                                  filter: `blur(${blur})`,
-                                }}
-                              >
-                                <button
-                                  onClick={() => selectColor(i)}
-                                  className="w-full h-full rounded-full cursor-pointer"
-                                  style={{
-                                    backgroundColor: color.value,
-                                    boxShadow: isCentered
-                                      ? `0 0 40px ${color.value}90, 0 0 80px ${color.value}30, 0 6px 20px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.4)`
-                                      : '0 2px 6px rgba(0,0,0,0.15)',
-                                    border: isCentered
-                                      ? '3px solid rgba(255,255,255,0.95)'
-                                      : '1px solid rgba(255,255,255,0.2)',
-                                  }}
-                                  aria-label={color.name}
-                                />
-                              </div>
-                            );
-                          })}
-                          {/* Right spacer */}
-                          <div className="flex-shrink-0 w-[calc(50%-32px)]" />
-                        </div>
-                      </div>
-
-                      {/* Center indicator dot */}
-                      <div className="mt-1 w-1.5 h-1.5 rounded-full bg-white/60 dark:bg-white/40 pointer-events-none" />
-
-                      <p
-                        className="mt-3 text-sm font-bold tracking-widest uppercase"
-                        style={{ color: wizardData.primaryColor }}
-                      >
-                        {WHEEL_COLORS[centeredIndex]?.name}
-                      </p>
-                    </div>
+                    <ColorCylinderCarousel
+                      defaultValue={wizardData.primaryColor}
+                      onColorSelect={(color) => {
+                        updateField('primaryColor', color);
+                        setTimeout(() => nextStep(), 700);
+                      }}
+                    />
                   </div>
                 )}
 
