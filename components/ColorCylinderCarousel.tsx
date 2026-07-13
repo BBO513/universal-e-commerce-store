@@ -48,10 +48,9 @@ export const ColorCylinderCarousel: React.FC<ColorCylinderCarouselProps> = ({
     return DEFAULT_COLORS.map((value) => ({ name: value, value }));
   }, [colors]);
 
-    const containerRef = useRef<HTMLDivElement>(null);
+      const containerRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const activeIndexRef = useRef(0);
-  const hasMountedRef = useRef(false);
   const onColorSelectRef = useRef(onColorSelect);
   onColorSelectRef.current = onColorSelect;
   const [activeIndex, setActiveIndex] = useState(0);
@@ -64,7 +63,7 @@ export const ColorCylinderCarousel: React.FC<ColorCylinderCarouselProps> = ({
     return resolvedColors.findIndex((color) => color.value === defaultValue);
   }, [defaultValue, resolvedColors]);
 
-  const updateActiveIndex = useCallback(() => {
+    const updateActiveIndex = useCallback(() => {
     const container = containerRef.current;
 
     if (!container) {
@@ -92,10 +91,15 @@ export const ColorCylinderCarousel: React.FC<ColorCylinderCarouselProps> = ({
     if (nearestIndex !== activeIndexRef.current) {
       activeIndexRef.current = nearestIndex;
       setActiveIndex(nearestIndex);
+      // Fire the callback immediately on scroll interaction, never on mount
+      const color = resolvedColors[nearestIndex];
+      if (color) {
+        onColorSelectRef.current?.(color.value, nearestIndex);
+      }
     }
-  }, []);
+  }, [resolvedColors]);
 
-  useEffect(() => {
+    useEffect(() => {
     const initialIndex = defaultValueIndex >= 0 ? defaultValueIndex : 0;
     activeIndexRef.current = initialIndex;
     setActiveIndex(initialIndex);
@@ -125,19 +129,9 @@ export const ColorCylinderCarousel: React.FC<ColorCylinderCarouselProps> = ({
     return () => container.removeEventListener('scroll', handleScroll);
   }, [updateActiveIndex]);
 
-    useEffect(() => {
-    if (!hasMountedRef.current) {
-      hasMountedRef.current = true;
-      return;
-    }
+    // No separate effect needed — onColorSelect is fired from updateActiveIndex
+  // which only runs on scroll events, never on mount.
 
-    const color = resolvedColors[activeIndex];
-    if (!color) {
-      return;
-    }
-
-    onColorSelectRef.current?.(color.value, activeIndex);
-  }, [activeIndex, resolvedColors]);
 
   const handleSelect = (index: number) => {
     const target = itemRefs.current[index];
