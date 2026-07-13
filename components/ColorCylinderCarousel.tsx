@@ -48,10 +48,12 @@ export const ColorCylinderCarousel: React.FC<ColorCylinderCarouselProps> = ({
     return DEFAULT_COLORS.map((value) => ({ name: value, value }));
   }, [colors]);
 
-  const containerRef = useRef<HTMLDivElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const activeIndexRef = useRef(0);
   const hasMountedRef = useRef(false);
+  const onColorSelectRef = useRef(onColorSelect);
+  onColorSelectRef.current = onColorSelect;
   const [activeIndex, setActiveIndex] = useState(0);
 
   const defaultValueIndex = useMemo(() => {
@@ -123,7 +125,7 @@ export const ColorCylinderCarousel: React.FC<ColorCylinderCarouselProps> = ({
     return () => container.removeEventListener('scroll', handleScroll);
   }, [updateActiveIndex]);
 
-  useEffect(() => {
+    useEffect(() => {
     if (!hasMountedRef.current) {
       hasMountedRef.current = true;
       return;
@@ -134,8 +136,8 @@ export const ColorCylinderCarousel: React.FC<ColorCylinderCarouselProps> = ({
       return;
     }
 
-    onColorSelect?.(color.value, activeIndex);
-  }, [activeIndex, onColorSelect, resolvedColors]);
+    onColorSelectRef.current?.(color.value, activeIndex);
+  }, [activeIndex, resolvedColors]);
 
   const handleSelect = (index: number) => {
     const target = itemRefs.current[index];
