@@ -1,78 +1,57 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect, useMemo, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import {
-  Check,
-  ChevronLeft,
-  ChevronRight,
-  Store,
-  Palette,
-  Link2,
-  CreditCard,
-  Sparkles,
-  Loader2,
-  Shield,
-  Lock,
-} from 'lucide-react';
-import { saveWizardSettings } from './actions';
-import { updateDemoSettings, saveToLocalStorage } from '@/lib/demo-store';
+import { Check, CreditCard, Link2, Palette, Store } from 'lucide-react';
 import { ColorCylinderCarousel } from '@/components/ColorCylinderCarousel';
+import { readUniversalStoreData, writeUniversalStoreData } from '@/lib/demo-store';
 
 const STEPS = [
-  { id: 1, label: 'Brand', icon: Store },
+  { id: 1, label: 'Store Name', icon: Store },
   { id: 2, label: 'Theme', icon: Palette },
-  { id: 3, label: 'Connect', icon: Link2 },
+  { id: 3, label: 'Socials', icon: Link2 },
   { id: 4, label: 'Payments', icon: CreditCard },
-];
-
-
-const SOCIAL_PLATFORMS = [
-  { id: 'instagram', label: 'Instagram', color: '#E4405F', prefix: '@' },
-  { id: 'tiktok', label: 'TikTok', color: '#000000', prefix: '@' },
-  { id: 'x', label: 'X (Twitter)', color: '#1DA1F2', prefix: '@' },
-  { id: 'facebook', label: 'Facebook', color: '#1877F2', prefix: 'facebook.com/' },
 ];
 
 interface WizardData {
   storeName: string;
-  primaryColor: string;
-  socialLinks: Record<string, string>;
-  stripeConnected: boolean;
+  themeColor: string;
+  socials: Record<string, string>;
+  stripe: boolean;
 }
 
+const DEFAULT_WIZARD_DATA: WizardData = {
+  storeName: '',
+  themeColor: '#0F4B5F',
+  socials: {},
+  stripe: false,
+};
+
 export default function SetupWizardPage() {
+  const router = useRouter();
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState(1);
-  const [connecting, setConnecting] = useState<string | null>(null);
-  const [connected, setConnected] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
-  const router = useRouter();
+  const [wizardData, setWizardData] = useState<WizardData>(DEFAULT_WIZARD_DATA);
 
-  const [wizardData, setWizardData] = useState<WizardData>({
-    storeName: '',
-    primaryColor: '#0F4B5F',
-    socialLinks: {},
-    stripeConnected: false,
-  });
-
-  const updateField = useCallback((field: keyof WizardData, value: any) => {
-    setWizardData((prev) => ({ ...prev, [field]: value }));
+  useEffect(() => {
+    const existing = readUniversalStoreData();
+    if (existing.settings) {
+      setWizardData({
+        storeName: existing.settings.storeName ?? '',
+        themeColor: existing.settings.themeColor ?? '#0F4B5F',
+        socials: existing.settings.socials ?? {},
+        stripe: Boolean(existing.settings.stripe),
+      });
+    }
   }, []);
 
-  const updateSocialLink = (platform: string, value: string) => {
-    setWizardData((prev) => ({
-      ...prev,
-      socialLinks: { ...prev.socialLinks, [platform]: value },
-    }));
-  };
-
-  const handleConnect = async (platform: string) => {
-    setConnecting(platform);
-    await new Promise((r) => setTimeout(r, 1500));
-    setConnected((prev) => [...prev, platform]);
-    setConnecting(null);
+  const handleStoreNameKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter' && wizardData.storeName.trim()) {
+      event.preventDefault();
+      nextStep();
+    }
   };
 
   const nextStep = () => {
@@ -85,508 +64,184 @@ export default function SetupWizardPage() {
     setStep((prev) => Math.max(prev - 1, 0));
   };
 
-  const handleFinish = async () => {
+  const handleColorSelect = (color: string) => {
+    setWizardData((prev) => ({ ...prev, themeColor: color }));
+    window.setTimeout(() => nextStep(), 700);
+  };
+
+  const updateSocial = (platform: string, value: string) => {
+    setWizardData((prev) => ({
+      ...prev,
+      socials: { ...prev.socials, [platform]: value },
+    }));
+  };
+
+  const handleFinishSetup = () => {
     setIsSaving(true);
-    const fd = new FormData();
-    fd.append('storeName', wizardData.storeName || 'My Store');
-    fd.append('primaryColor', wizardData.primaryColor);
-    fd.append('socialLinks', JSON.stringify(wizardData.socialLinks));
-    const result = await saveWizardSettings(fd);
-    if (result.success) {
-      updateDemoSettings({
-        store_name: wizardData.storeName || 'My Store',
-        primary_color: wizardData.primaryColor,
-        social_links: wizardData.socialLinks,
-      });
-      saveToLocalStorage();
-      router.push('/');
-    } else {
-      alert('Failed to save: ' + (result.error || 'Unknown error'));
-      setIsSaving(false);
-    }
+    const payload = {
+      settings: {
+        storeName: wizardData.storeName.trim() || 'My Store',
+        themeColor: wizardData.themeColor,
+        socials: wizardData.socials,
+        stripe: wizardData.stripe,
+      },
+      products: readUniversalStoreData().products,
+    };
+
+    writeUniversalStoreData(payload);
+    router.push('/');
   };
 
-  const isStepComplete = (s: number) => {
-    switch (s) {
-      case 0: return wizardData.storeName.trim().length > 0;
-      case 1: return true;
-      case 2: return connected.length > 0;
-      case 3: return true;
-      default: return false;
-    }
-  };
-
-  const variants = {
-    enter: (dir: number) => ({ x: dir > 0 ? 300 : -300, opacity: 0 }),
-    center: { x: 0, opacity: 1 },
-    exit: (dir: number) => ({ x: dir > 0 ? -300 : 300, opacity: 0 }),
-  };
+  const stepLabel = useMemo(() => STEPS[step]?.label ?? 'Setup', [step]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex flex-col items-center justify-center px-4 pt-12 pb-28">
-      <div className="w-full max-w-2xl">
-        {/* Progress Stepper */}
-        <div className="mb-12">
-          <div className="flex items-center justify-between">
-            {STEPS.map((s, i) => {
-              const Icon = s.icon;
-              const isActive = i <= step;
-              const isCurrent = i === step;
-              return (
-                <div key={s.id} className="flex items-center flex-1 last:flex-none">
-                  <div className="flex flex-col items-center">
-                    <motion.div
-                      animate={{
-                        scale: isCurrent ? 1.1 : 1,
-                        backgroundColor: isActive
-                          ? wizardData.primaryColor
-                          : 'rgb(226 232 240)',
-                      }}
-                      className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors duration-500 ${
-                        !isActive && 'dark:bg-slate-700'
-                      }`}
-                    >
-                      {isActive ? (
-                        <Icon className="w-5 h-5 text-white" />
-                      ) : (
-                        <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">
-                          {s.id}
-                        </span>
-                      )}
-                    </motion.div>
-                    <span
-                      className={`mt-2 text-xs font-medium whitespace-nowrap ${
-                        isCurrent
-                          ? 'text-slate-900 dark:text-white'
-                          : isActive
-                          ? 'text-slate-600 dark:text-slate-300'
-                          : 'text-slate-400 dark:text-slate-500'
-                      }`}
-                    >
-                      {s.label}
-                    </span>
-                  </div>
-                  {i < STEPS.length - 1 && (
-                    <div className="flex-1 h-0.5 mx-3 mt-[-1rem]">
-                      <motion.div
-                        className="h-full rounded-full"
-                        animate={{
-                          backgroundColor: i < step ? wizardData.primaryColor : 'rgb(226 232 240)',
-                        }}
-                        transition={{ duration: 0.5 }}
-                      />
-                    </div>
-                  )}
+    <div className="min-h-screen bg-slate-950 px-4 py-8 text-white">
+      <div className="mx-auto flex max-w-2xl flex-col gap-6">
+        <div className="rounded-3xl border border-white/10 bg-white/10 p-4 backdrop-blur-xl">
+          <p className="text-sm uppercase tracking-[0.3em] text-slate-300">Universal Store Setup</p>
+          <h1 className="mt-2 text-2xl font-semibold">{stepLabel}</h1>
+        </div>
+
+        <div className="flex items-center justify-between gap-2">
+          {STEPS.map((item, index) => {
+            const Icon = item.icon;
+            const isActive = index <= step;
+            return (
+              <div key={item.id} className="flex flex-1 flex-col items-center gap-2">
+                <div
+                  className={`flex h-12 w-12 items-center justify-center rounded-full border ${isActive ? 'border-white/0' : 'border-white/20'}`}
+                  style={{ backgroundColor: isActive ? wizardData.themeColor : '#1f2937' }}
+                >
+                  <Icon className="h-5 w-5" />
                 </div>
-              );
-            })}
-          </div>
+                <span className="text-center text-[10px] font-medium uppercase tracking-[0.2em] text-slate-400">
+                  {item.label}
+                </span>
+              </div>
+            );
+          })}
         </div>
 
-        {/* Step Card */}
-        <div className="relative overflow-hidden rounded-3xl border border-white/20 bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl shadow-2xl shadow-slate-200/50 dark:shadow-black/30">
-          <div className="p-8 md:p-10">
-            <AnimatePresence mode="wait" custom={direction}>
-              <motion.div
-                key={step}
-                custom={direction}
-                variants={variants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-              >
-                {/* Step 0: Store Name */}
-                {step === 0 && (
-                  <div className="space-y-6">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="w-12 h-12 rounded-2xl flex items-center justify-center"
-                        style={{ backgroundColor: wizardData.primaryColor + '20' }}
-                      >
-                        <Store className="w-6 h-6" style={{ color: wizardData.primaryColor }} />
-                      </div>
-                      <div>
-                        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-                          Name your store
-                        </h2>
-                        <p className="text-slate-500 dark:text-slate-400 text-sm">
-                          This will appear on your storefront and receipts.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={wizardData.storeName}
-                        onChange={(e) => updateField('storeName', e.target.value)}
-                        placeholder='e.g. "Nova Threads" or "Gear Lab"'
-                        enterKeyHint="done"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && wizardData.storeName.trim()) {
-                            e.preventDefault();
-                            nextStep();
-                          }
-                        }}
-                        className="w-full px-5 py-4 text-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-opacity-50 transition-shadow"
-                        style={{ '--tw-ring-color': wizardData.primaryColor } as React.CSSProperties}
-                        autoFocus
-                      />
-                      {wizardData.storeName.trim() && (
-                        <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className="absolute right-4 top-1/2 -translate-y-1/2"
-                        >
-                          <Check className="w-5 h-5 text-emerald-500" />
-                        </motion.div>
-                      )}
-                    </div>
-
-                    {wizardData.storeName.trim() && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="p-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/30"
-                      >
-                        <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-2">
-                          Preview
-                        </p>
-                        <p
-                          className="text-3xl font-extrabold"
-                          style={{ color: wizardData.primaryColor }}
-                        >
-                          {wizardData.storeName}
-                        </p>
-                        <p className="text-slate-400 text-sm mt-1">
-                          yourstore.com
-                        </p>
-                      </motion.div>
-                    )}
+        <div className="rounded-[28px] border border-white/10 bg-slate-900/80 p-5 shadow-2xl shadow-black/30">
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={step}
+              initial={{ opacity: 0, x: direction > 0 ? 24 : -24 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: direction > 0 ? -24 : 24 }}
+              transition={{ duration: 0.2 }}
+              className="space-y-5"
+            >
+              {step === 0 && (
+                <div className="space-y-5">
+                  <div className="space-y-2">
+                    <h2 className="text-xl font-semibold">Name your store</h2>
+                    <p className="text-sm text-slate-400">This will appear across your storefront and receipts.</p>
                   </div>
-                )}
-
-                {/* Step 1: Theme Colors — 3D Cylinder Carousel */}
-                {step === 1 && (
-                  <div className="space-y-6">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="w-12 h-12 rounded-2xl flex items-center justify-center"
-                        style={{ backgroundColor: wizardData.primaryColor + '20' }}
-                      >
-                        <Palette className="w-6 h-6" style={{ color: wizardData.primaryColor }} />
-                      </div>
-                      <div>
-                        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-                          Pick a color
-                        </h2>
-                        <p className="text-slate-500 dark:text-slate-400 text-sm">
-                          Spin the cylinder to find your vibe. Snap to confirm.
-                        </p>
-                      </div>
-                    </div>
-
-                    <ColorCylinderCarousel
-                      defaultValue={wizardData.primaryColor}
-                      onColorSelect={(color) => {
-                        updateField('primaryColor', color);
-                        setTimeout(() => nextStep(), 700);
-                      }}
+                  <div className="relative">
+                    <input
+                      autoFocus
+                      value={wizardData.storeName}
+                      onChange={(event) => setWizardData((prev) => ({ ...prev, storeName: event.target.value }))}
+                      onKeyDown={handleStoreNameKeyDown}
+                      placeholder='e.g. "Northwind Motors"'
+                      className="min-h-[56px] w-full rounded-2xl border border-white/10 bg-slate-800 px-4 py-3 text-base text-white outline-none ring-0"
                     />
-                  </div>
-                )}
-
-                {/* Step 2: Social Links */}
-                {step === 2 && (
-                  <div className="space-y-6">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="w-12 h-12 rounded-2xl flex items-center justify-center"
-                        style={{ backgroundColor: wizardData.primaryColor + '20' }}
-                      >
-                        <Link2 className="w-6 h-6" style={{ color: wizardData.primaryColor }} />
+                    {wizardData.storeName.trim() && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <Check className="h-5 w-5 text-emerald-400" />
                       </div>
-                      <div>
-                        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-                          Connect your socials
-                        </h2>
-                        <p className="text-slate-500 dark:text-slate-400 text-sm">
-                          Link your accounts to auto-generate social previews.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="space-y-3">
-                      {SOCIAL_PLATFORMS.map((platform) => {
-                        const isConnected = connected.includes(platform.id);
-                        const isLoading = connecting === platform.id;
-
-                        return (
-                          <motion.div
-                            key={platform.id}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: SOCIAL_PLATFORMS.indexOf(platform) * 0.1 }}
-                            className={`flex items-center gap-4 p-4 rounded-2xl border transition-all ${
-                              isConnected
-                                ? 'border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20'
-                                : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/30'
-                            }`}
-                          >
-                            <div
-                              className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-sm font-bold"
-                              style={{ backgroundColor: platform.color }}
-                            >
-                              {platform.label.charAt(0)}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="font-semibold text-slate-900 dark:text-white text-sm">
-                                {platform.label}
-                              </p>
-                              {isConnected ? (
-                                <p className="text-emerald-600 dark:text-emerald-400 text-xs truncate">
-                                  Connected
-                                </p>
-                              ) : (
-                                <div className="flex items-center gap-1.5 mt-1">
-                                  <span className="text-slate-400 text-xs">{platform.prefix}</span>
-                                  <input
-                                    type="text"
-                                    placeholder="username"
-                                    value={wizardData.socialLinks[platform.id] || ''}
-                                    onChange={(e) => updateSocialLink(platform.id, e.target.value)}
-                                    className="flex-1 px-2 py-0.5 text-xs bg-transparent border-b border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 focus:outline-none focus:border-slate-500"
-                                  />
-                                </div>
-                              )}
-                            </div>
-                            {isConnected ? (
-                              <motion.div
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center"
-                              >
-                                <Check className="w-4 h-4 text-white" />
-                              </motion.div>
-                            ) : (
-                              <motion.button
-                                whileTap={{ scale: 0.97 }}
-                                onClick={() => handleConnect(platform.id)}
-                                disabled={isLoading}
-                                className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 ${
-                                  isLoading
-                                    ? 'bg-slate-200 dark:bg-slate-700 text-slate-500 cursor-wait'
-                                    : 'text-white'
-                                }`}
-                                style={isLoading ? {} : { backgroundColor: platform.color }}
-                              >
-                                {isLoading ? (
-                                  <>
-                                    <Loader2 className="w-3 h-3 animate-spin" />
-                                    Connecting
-                                  </>
-                                ) : (
-                                  'Connect'
-                                )}
-                              </motion.button>
-                            )}
-                          </motion.div>
-                        );
-                      })}
-                    </div>
-
-                    {connected.length === 4 && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="p-4 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 border border-emerald-200 dark:border-emerald-800 text-center"
-                      >
-                        <Sparkles className="w-5 h-5 text-emerald-500 mx-auto mb-1" />
-                        <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
-                          All platforms connected!
-                        </p>
-                      </motion.div>
                     )}
                   </div>
-                )}
-
-                {/* Step 3: Stripe Connect */}
-                {step === 3 && (
-                  <div className="space-y-6">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="w-12 h-12 rounded-2xl flex items-center justify-center"
-                        style={{ backgroundColor: wizardData.primaryColor + '20' }}
-                      >
-                        <CreditCard className="w-6 h-6" style={{ color: wizardData.primaryColor }} />
-                      </div>
-                      <div>
-                        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-                          Set up payments
-                        </h2>
-                        <p className="text-slate-500 dark:text-slate-400 text-sm">
-                          Accept credit cards and digital wallets in seconds.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col items-center py-4">
-                      {!wizardData.stripeConnected ? (
-                        <>
-                          <p className="text-zinc-400 dark:text-zinc-500 text-sm font-medium mb-6 text-center">
-                            Connect your Stripe account to start getting paid.
-                          </p>
-                          {connecting === 'stripe' ? (
-                            <motion.div
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              className="flex flex-col items-center gap-4"
-                            >
-                              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#635BFF] via-[#7B6FFF] to-[#9180FF] flex items-center justify-center shadow-lg shadow-[#635BFF]/30">
-                                <Loader2 className="w-8 h-8 text-white animate-spin" />
-                              </div>
-                              <p className="text-zinc-500 dark:text-zinc-400 text-sm font-medium">
-                                Connecting to Stripe...
-                              </p>
-                            </motion.div>
-                          ) : (
-                            <motion.button
-                              whileTap={{ scale: 0.97 }}
-                              onClick={() => {
-                                setConnecting('stripe');
-                                setTimeout(() => {
-                                  setConnecting(null);
-                                  updateField('stripeConnected', true);
-                                }, 2000);
-                              }}
-                              className="w-full max-w-sm bg-gradient-to-r from-[#635BFF] via-[#7B6FFF] to-[#9180FF] text-white font-semibold text-base py-4 px-6 rounded-2xl shadow-lg shadow-[#635BFF]/25 transition-shadow flex items-center justify-center gap-3"
-                            >
-                              <svg
-                                className="w-6 h-6"
-                                viewBox="0 0 24 25"
-                                fill="none"
-                                xmlns="http://www.w3.org/2000/svg"
-                              >
-                                <path
-                                  d="M13.5 3.5L3 14H10.5V22L21 11.5H13.5V3.5Z"
-                                  fill="currentColor"
-                                />
-                              </svg>
-                              Connect with Stripe
-                            </motion.button>
-                          )}
-                        </>
-                      ) : (
-                        <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                          className="flex flex-col items-center gap-3"
-                        >
-                          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/25">
-                            <Check className="w-10 h-10 text-white" />
-                          </div>
-                          <p className="text-emerald-600 dark:text-emerald-400 font-bold text-lg">
-                            Stripe Connected
-                          </p>
-                          <p className="text-zinc-400 dark:text-zinc-500 text-sm">
-                            You're ready to accept payments from day one.
-                          </p>
-                        </motion.div>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="flex items-center gap-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-900/30 border border-slate-100 dark:border-slate-800">
-                        <Shield className="w-4 h-4 text-zinc-500 dark:text-zinc-400 flex-shrink-0" />
-                        <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400 leading-tight">
-                          Bank-level security
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-900/30 border border-slate-100 dark:border-slate-800">
-                        <Lock className="w-4 h-4 text-zinc-500 dark:text-zinc-400 flex-shrink-0" />
-                        <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400 leading-tight">
-                          256-bit encryption
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-900/30 border border-slate-100 dark:border-slate-800">
-                        <Check className="w-4 h-4 text-zinc-500 dark:text-zinc-400 flex-shrink-0" />
-                        <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400 leading-tight">
-                          PCI-DSS compliant
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-900/30 border border-slate-100 dark:border-slate-800">
-                        <CreditCard className="w-4 h-4 text-zinc-500 dark:text-zinc-400 flex-shrink-0" />
-                        <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400 leading-tight">
-                          All major cards
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="p-6 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 dark:from-slate-800 dark:to-slate-900 text-white text-center space-y-3">
-                      <Sparkles className="w-8 h-8 mx-auto text-amber-400" />
-                      <h3 className="text-xl font-bold">You're all set!</h3>
-                      <p className="text-slate-400 text-sm">
-                        Your store <strong className="text-white">{wizardData.storeName || 'My Store'}</strong> is
-                        ready. Click finish to save your settings and launch.
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </motion.div>
-            </AnimatePresence>
-          </div>
-        </div>
-      </div>
-
-      {/* Navigation - Fixed Bottom */}
-      <div className="fixed bottom-0 left-0 right-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800">
-        <div className="flex items-center gap-3 px-4 py-4 w-full max-w-2xl mx-auto">
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            onClick={prevStep}
-            disabled={step === 0}
-            className={`flex items-center justify-center w-12 h-12 rounded-2xl flex-shrink-0 transition-opacity ${
-              step === 0
-                ? 'opacity-0 pointer-events-none'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
-            }`}
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </motion.button>
-
-          {step < STEPS.length - 1 ? (
-            <motion.button
-              whileTap={{ scale: 0.98 }}
-              onClick={nextStep}
-              disabled={!isStepComplete(step)}
-              className="flex-1 h-14 rounded-2xl text-lg font-bold text-white flex items-center justify-center gap-2 disabled:opacity-40"
-              style={{
-                backgroundColor: isStepComplete(step) ? wizardData.primaryColor : '#94A3B8',
-              }}
-            >
-              Continue
-              <ChevronRight className="w-5 h-5" />
-            </motion.button>
-          ) : (
-            <motion.button
-              whileTap={{ scale: 0.98 }}
-              onClick={handleFinish}
-              disabled={isSaving}
-              className="flex-1 h-14 rounded-2xl text-lg font-bold text-white flex items-center justify-center gap-2 disabled:opacity-60"
-              style={{ backgroundColor: wizardData.primaryColor }}
-            >
-              {isSaving ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <>
-                  <Sparkles className="w-5 h-5" />
-                  Finish Setup
-                </>
+                  <button
+                    type="button"
+                    onClick={nextStep}
+                    disabled={!wizardData.storeName.trim()}
+                    className="min-h-[56px] w-full rounded-2xl px-4 py-3 text-base font-semibold text-white disabled:opacity-50"
+                    style={{ backgroundColor: wizardData.themeColor }}
+                  >
+                    Next
+                  </button>
+                </div>
               )}
-            </motion.button>
-          )}
+
+              {step === 1 && (
+                <div className="space-y-5">
+                  <div className="space-y-2">
+                    <h2 className="text-xl font-semibold">Choose a theme color</h2>
+                    <p className="text-sm text-slate-400">The carousel updates your storefront accent instantly.</p>
+                  </div>
+                  <ColorCylinderCarousel
+                    defaultValue={wizardData.themeColor}
+                    onColorSelect={handleColorSelect}
+                  />
+                  <button
+                    type="button"
+                    onClick={nextStep}
+                    className="min-h-[56px] w-full rounded-2xl px-4 py-3 text-base font-semibold text-white"
+                    style={{ backgroundColor: wizardData.themeColor }}
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
+
+              {step === 2 && (
+                <div className="space-y-5">
+                  <div className="space-y-2">
+                    <h2 className="text-xl font-semibold">Add your socials</h2>
+                    <p className="text-sm text-slate-400">Instagram, Facebook, and TikTok are all supported.</p>
+                  </div>
+                  <div className="space-y-3">
+                    {['instagram', 'facebook', 'tiktok'].map((platform) => (
+                      <label key={platform} className="block">
+                        <span className="mb-2 block text-sm uppercase tracking-[0.2em] text-slate-400">{platform}</span>
+                        <input
+                          value={wizardData.socials[platform] ?? ''}
+                          onChange={(event) => updateSocial(platform, event.target.value)}
+                          placeholder={platform === 'instagram' || platform === 'tiktok' ? '@yourhandle' : 'facebook.com/yourpage'}
+                          className="min-h-[56px] w-full rounded-2xl border border-white/10 bg-slate-800 px-4 py-3 text-base text-white outline-none"
+                        />
+                      </label>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={nextStep}
+                    className="min-h-[56px] w-full rounded-2xl px-4 py-3 text-base font-semibold text-white"
+                    style={{ backgroundColor: wizardData.themeColor }}
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
+
+              {step === 3 && (
+                <div className="space-y-5">
+                  <div className="space-y-2">
+                    <h2 className="text-xl font-semibold">Connect payments</h2>
+                    <p className="text-sm text-slate-400">Stripe is mocked for now, but your setup is ready to go live.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setWizardData((prev) => ({ ...prev, stripe: true }))}
+                    className="min-h-[56px] w-full rounded-2xl border border-white/10 bg-slate-800 px-4 py-3 text-base font-semibold text-white"
+                  >
+                    {wizardData.stripe ? 'Stripe Connected' : 'Connect Stripe (Mock)'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleFinishSetup}
+                    disabled={isSaving}
+                    className="min-h-[56px] w-full rounded-2xl px-4 py-3 text-base font-semibold text-white"
+                    style={{ backgroundColor: wizardData.themeColor }}
+                  >
+                    {isSaving ? 'Saving…' : 'Finish Setup'}
+                  </button>
+                </div>
+              )}
+            </motion.div>
+          </AnimatePresence>
         </div>
       </div>
     </div>

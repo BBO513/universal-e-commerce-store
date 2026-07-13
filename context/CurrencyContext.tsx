@@ -9,6 +9,11 @@ interface CurrencyContextType {
   setCurrency: (currency: Currency) => void;
 }
 
+const defaultCurrencyContextValue: CurrencyContextType = {
+  currency: 'AUD',
+  setCurrency: () => undefined,
+};
+
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
 
 export function CurrencyProvider({ children }: { children: ReactNode }) {
@@ -23,8 +28,5 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
 
 export function useCurrency() {
   const context = useContext(CurrencyContext);
-  if (context === undefined) {
-    throw new Error('useCurrency must be used within a CurrencyProvider');
-  }
-  return context;
+  return context ?? defaultCurrencyContextValue;
 }

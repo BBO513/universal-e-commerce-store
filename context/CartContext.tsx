@@ -37,6 +37,18 @@ interface CartContextType {
   loading: boolean;
 }
 
+const defaultCartContextValue: CartContextType = {
+  cartItems: [],
+  addItem: async () => undefined,
+  updateItem: async () => undefined,
+  removeItem: async () => undefined,
+  clearCart: async () => undefined,
+  cartTotal: 0,
+  cartSubtotal: 0,
+  cartGST: 0,
+  loading: false,
+};
+
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 const GST_RATE = 0.10; // 10% GST in Australia
@@ -391,8 +403,5 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
 export function useCart() {
   const context = useContext(CartContext);
-  if (context === undefined) {
-    throw new Error('useCart must be used within a CartProvider');
-  }
-  return context;
+  return context ?? defaultCartContextValue;
 }

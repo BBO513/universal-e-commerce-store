@@ -43,40 +43,35 @@ export default function ProductCard({
   };
 
   return (
-    <Link
-      href={`/product/${id}`}
-      className="group block"
-    >
-      <div className="relative overflow-hidden rounded-3xl bg-zinc-100 dark:bg-zinc-900 mb-4">
+    <Link href={`/product/${id}`} className="group block">
+      <div className="relative mb-4 overflow-hidden rounded-3xl bg-zinc-100 dark:bg-zinc-900">
         {images && images.length > 0 ? (
           <img
             src={images[0]}
             alt={title}
-            className="w-full aspect-square object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+            className="aspect-square w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
             loading="lazy"
           />
         ) : (
-          <div className="w-full aspect-square flex items-center justify-center text-zinc-400 dark:text-zinc-600 text-sm font-medium">
+          <div className="flex aspect-square w-full items-center justify-center text-sm font-medium text-zinc-400 dark:text-zinc-600">
             No Image
           </div>
         )}
         {showAddToCart && stock > 0 && (
           <button
             onClick={handleAddToCart}
-            className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-lg shadow-black/10 hover:bg-white dark:hover:bg-zinc-800"
+            className="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-full bg-white/95 shadow-lg shadow-black/10 dark:bg-zinc-950/95"
             aria-label="Add to cart"
           >
-            <Plus className="w-5 h-5 text-zinc-900 dark:text-white" />
+            <Plus className="h-5 w-5 text-zinc-900 dark:text-white" />
           </button>
         )}
       </div>
       <div className="px-1">
-        <h3 className="text-sm sm:text-base font-bold tracking-tight text-zinc-900 dark:text-white truncate font-[family-name:var(--font-heading)]">
+        <h3 className="truncate text-sm font-bold tracking-tight text-zinc-900 dark:text-white sm:text-base font-[family-name:var(--font-heading)]">
           {title}
         </h3>
-        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400 tracking-wide">
-          {formatPrice(price)}
-        </p>
+        <p className="mt-1 text-sm tracking-wide text-zinc-500 dark:text-zinc-400">{formatPrice(price)}</p>
       </div>
     </Link>
   );
