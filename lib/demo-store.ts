@@ -1,111 +1,139 @@
-let demoSettings: any = {
-  store_name: 'My Store',
-  primary_color: '#0F4B5F',
-  social_links: {},
+export const UNIVERSAL_STORE_STORAGE_KEY = 'universal_store_data';
+
+export interface StoreSettings {
+  storeName: string;
+  themeColor: string;
+  socials: Record<string, string>;
+  stripe: boolean;
+}
+
+export interface UniversalStoreData {
+  settings: StoreSettings;
+  products: any[];
+}
+
+const DEFAULT_SETTINGS: StoreSettings = {
+  storeName: '',
+  themeColor: '#0F4B5F',
+  socials: {},
+  stripe: false,
 };
 
-let demoProducts: any[] = [];
-let demoNextId = 1;
+const DEFAULT_DATA: UniversalStoreData = {
+  settings: DEFAULT_SETTINGS,
+  products: [],
+};
 
-const demoCategories: any[] = [
-  { id: 1, name: 'Handmade', slug: 'handmade', description: 'Handmade items from our community' },
-];
+function normalizeSettings(settings: any = {}): StoreSettings {
+  return {
+    storeName: settings.storeName ?? settings.store_name ?? '',
+    themeColor: settings.themeColor ?? settings.primary_color ?? '#0F4B5F',
+    socials: settings.socials ?? settings.social_links ?? {},
+    stripe: Boolean(settings.stripe ?? settings.stripeConnected ?? false),
+  };
+}
+
+function normalizeData(data: any = {}): UniversalStoreData {
+  const settings = normalizeSettings(data.settings);
+  const products = Array.isArray(data.products) ? data.products : [];
+  return {
+    settings,
+    products,
+  };
+}
+
+export function readUniversalStoreData(): UniversalStoreData {
+  if (typeof window === 'undefined') {
+    return DEFAULT_DATA;
+  }
+
+  try {
+    const raw = window.localStorage.getItem(UNIVERSAL_STORE_STORAGE_KEY);
+    if (!raw) {
+      return DEFAULT_DATA;
+    }
+
+    return normalizeData(JSON.parse(raw));
+  } catch {
+    return DEFAULT_DATA;
+  }
+}
+
+export async function writeUniversalStoreData(data: Partial<UniversalStoreData> = {}) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  const current = readUniversalStoreData();
+  const nextData = normalizeData({
+    settings: data.settings ?? current.settings,
+    products: data.products ?? current.products,
+  });
+
+  try {
+    window.localStorage.setItem(UNIVERSAL_STORE_STORAGE_KEY, JSON.stringify(nextData));
+  } catch {
+    // ignore quota issues
+  }
+
+  await Promise.resolve();
+}
 
 export function getDemoSettings() {
-  return { ...demoSettings, id: 1 };
+  return { ...readUniversalStoreData().settings, id: 1 };
 }
 
 export function updateDemoSettings(settings: any) {
-  Object.assign(demoSettings, settings);
-  return { ...demoSettings, id: 1 };
+  const current = readUniversalStoreData();
+  const updatedSettings = normalizeSettings({ ...current.settings, ...settings });
+  writeUniversalStoreData({ settings: updatedSettings, products: current.products });
+  return { ...updatedSettings, id: 1 };
 }
 
 export function getDemoProducts() {
-  return [...demoProducts];
+  return [...readUniversalStoreData().products];
 }
 
 export function addDemoProduct(product: any) {
-  const newProduct = {
+  const current = readUniversalStoreData();
+  const nextProduct = {
     ...product,
-    id: demoNextId++,
+    id: Date.now(),
     created_at: new Date().toISOString(),
   };
-  demoProducts.unshift(newProduct);
-  return newProduct;
+  const nextProducts = [nextProduct, ...current.products];
+  writeUniversalStoreData({ settings: current.settings, products: nextProducts });
+  return nextProduct;
 }
 
 export function getDemoCategories() {
-  return [...demoCategories];
+  return [{ id: 1, name: 'Handmade', slug: 'handmade', description: 'Handmade items from our community' }];
 }
 
-export function hydrateFromCookie(cookieJson: string | undefined) {
-  if (!cookieJson) return;
-  try {
-    const data = JSON.parse(cookieJson);
-    if (data.settings) {
-      Object.assign(demoSettings, data.settings);
-    }
-    if (data.products && Array.isArray(data.products)) {
-      demoProducts = data.products;
-      demoNextId = demoProducts.reduce((max, p) => Math.max(max, p.id || 0), 0) + 1;
-    }
-  } catch {
-    // ignore corrupt cookie
-  }
+export function hydrateFromCookie(_cookieJson: string | undefined) {
+  return;
 }
 
 export function getCookiePayload(): string {
-  return JSON.stringify({
-    settings: demoSettings,
-    products: demoProducts,
-  });
+  return JSON.stringify(readUniversalStoreData());
 }
 
 export function saveToLocalStorage() {
-  if (typeof window === 'undefined') return;
-  try {
-    const raw = localStorage.getItem('demo_data');
-    const existing = raw ? JSON.parse(raw) : { settings: {}, products: [] };
-    localStorage.setItem('demo_data', JSON.stringify({
-      settings: { ...existing.settings, ...demoSettings },
-      products: demoProducts.length > 0 ? demoProducts : existing.products || [],
-    }));
-  } catch {
-    // quota exceeded — silently ignore
-  }
+  const current = readUniversalStoreData();
+  writeUniversalStoreData(current);
 }
 
 export function addToLocalStorage(product: any) {
-  if (typeof window === 'undefined') return;
-  try {
-    const raw = localStorage.getItem('demo_data');
-    const data = raw ? JSON.parse(raw) : { settings: demoSettings, products: [] };
-    const existingIds = new Set(data.products.map((p: any) => p.id));
-    if (!existingIds.has(product.id)) {
-      data.products.unshift(product);
-      localStorage.setItem('demo_data', JSON.stringify(data));
-      demoProducts = data.products;
-      demoNextId = Math.max(demoNextId, product.id + 1);
-    }
-  } catch {
-    // ignore
+  const current = readUniversalStoreData();
+  const existingIds = new Set(current.products.map((p: any) => p.id));
+  if (existingIds.has(product.id)) {
+    return;
   }
+
+  const nextProducts = [product, ...current.products];
+  writeUniversalStoreData({ settings: current.settings, products: nextProducts });
 }
 
 export function loadFromLocalStorage() {
-  if (typeof window === 'undefined') return;
-  try {
-    const raw = localStorage.getItem('demo_data');
-    if (!raw) return;
-    const data = JSON.parse(raw);
-    if (data.settings) {
-      Object.assign(demoSettings, data.settings);
-    }
-    if (data.products && Array.isArray(data.products)) {
-      demoProducts = data.products;
-      demoNextId = demoProducts.reduce((max: number, p: any) => Math.max(max, p.id || 0), 0) + 1;
-    }
-  } catch {
-    // ignore corrupt data
-  }
+  return readUniversalStoreData();
 }

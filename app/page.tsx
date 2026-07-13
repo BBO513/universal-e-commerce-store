@@ -1,120 +1,133 @@
 ﻿'use client';
 
-import { useState, useEffect } from 'react';
-import { getDemoProducts, getDemoSettings, loadFromLocalStorage } from '@/lib/demo-store';
+import { useEffect, useState } from 'react';
+import { readUniversalStoreData } from '@/lib/demo-store';
 import PremiumHero from '@/components/PremiumHero';
 import ProductCard from '@/components/ProductCard';
 
 export default function HomePage() {
   const [hydrated, setHydrated] = useState(false);
   const [products, setProducts] = useState<any[]>([]);
-  const [settings, setSettings] = useState<any>({ store_name: 'My Store', primary_color: '#0F4B5F' });
+  const [settings, setSettings] = useState<any>({ storeName: '', themeColor: '#0F4B5F' });
 
   useEffect(() => {
-    loadFromLocalStorage();
-    setProducts(getDemoProducts());
-    setSettings(getDemoSettings());
-    setHydrated(true);
+    const loadStoreData = async () => {
+      const data = readUniversalStoreData();
+
+      setProducts(data.products ?? []);
+      setSettings(data.settings ?? { storeName: '', themeColor: '#0F4B5F' });
+      setHydrated(true);
+    };
+
+    void loadStoreData();
   }, []);
 
-  const storeConfigured = settings.store_name !== 'My Store' && settings.store_name !== '';
-
+  const storeConfigured = Boolean(settings.storeName && settings.storeName.trim());
+  const hasProducts = products.length > 0;
   const freshDrops = products.slice(0, 4);
   const moreGoods = products.slice(4);
+
+  if (!hydrated) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-zinc-950">
+        <div className="mx-auto flex min-h-[50vh] max-w-7xl items-center justify-center px-6 py-24">
+          <div className="flex items-center gap-3 rounded-full border border-zinc-200 bg-white px-5 py-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-900 dark:border-zinc-700 dark:border-t-white" />
+            <span className="text-sm font-medium text-zinc-600 dark:text-zinc-300">Loading storefront…</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white dark:bg-zinc-950">
       <PremiumHero
-        storeName={settings.store_name}
-        primaryColor={settings.primary_color}
+        storeName={settings.storeName || 'My Store'}
+        primaryColor={settings.themeColor || '#0F4B5F'}
       />
 
-      <div className="max-w-7xl mx-auto px-6 pb-24">
-        {freshDrops.length > 0 && (
-          <section className="mb-24">
-            <div className="flex items-center gap-3 mb-10">
-              <span
-                className="w-2 h-2 rounded-full animate-pulse"
-                style={{ backgroundColor: settings.primary_color }}
-              />
-              <p className="text-xs sm:text-sm uppercase tracking-[0.32em] text-zinc-400 font-medium">
-                Fresh Drops
-              </p>
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-zinc-900 dark:text-white mb-10 font-[family-name:var(--font-heading)]">
-              Just Listed
-            </h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
-              {freshDrops.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  id={String(product.id)}
-                  title={product.title}
-                  price={Number(product.price)}
-                  images={product.images || []}
-                  condition={product.condition || 'new'}
-                  stock={product.stock ?? 1}
-                  brand={product.brand}
-                  showAddToCart
-                />
-              ))}
-            </div>
-          </section>
+      <div className="mx-auto max-w-7xl px-6 pb-24">
+        {hydrated && hasProducts && (
+          <>
+            <section className="mb-24">
+              <div className="mb-10 flex items-center gap-3">
+                <span className="h-2 w-2 animate-pulse rounded-full" style={{ backgroundColor: settings.themeColor }} />
+                <p className="text-xs font-medium uppercase tracking-[0.32em] text-zinc-400 sm:text-sm">Fresh Drops</p>
+              </div>
+              <h2 className="mb-10 font-[family-name:var(--font-heading)] text-3xl font-bold tracking-tight text-zinc-900 dark:text-white sm:text-4xl">
+                Just Listed
+              </h2>
+              <div className="grid grid-cols-2 gap-6 md:grid-cols-4 md:gap-8">
+                {freshDrops.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    id={String(product.id)}
+                    title={product.title}
+                    price={Number(product.price)}
+                    images={product.images || []}
+                    condition={product.condition || 'new'}
+                    stock={product.stock ?? 1}
+                    brand={product.brand}
+                    showAddToCart
+                  />
+                ))}
+              </div>
+            </section>
+
+            {moreGoods.length > 0 && (
+              <section>
+                <p className="mb-10 text-xs font-medium uppercase tracking-[0.32em] text-zinc-400 sm:text-sm">Explore All</p>
+                <div className="grid grid-cols-2 gap-6 md:grid-cols-3 md:gap-8 lg:grid-cols-4">
+                  {moreGoods.map((product) => (
+                    <ProductCard
+                      key={product.id}
+                      id={String(product.id)}
+                      title={product.title}
+                      price={Number(product.price)}
+                      images={product.images || []}
+                      condition={product.condition || 'new'}
+                      stock={product.stock ?? 1}
+                      brand={product.brand}
+                      showAddToCart
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+          </>
         )}
 
-        {moreGoods.length > 0 && (
-          <section>
-            <p className="text-xs sm:text-sm uppercase tracking-[0.32em] text-zinc-400 mb-10 font-medium">
-              Explore All
-            </p>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 md:gap-8">
-              {moreGoods.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  id={String(product.id)}
-                  title={product.title}
-                  price={Number(product.price)}
-                  images={product.images || []}
-                  condition={product.condition || 'new'}
-                  stock={product.stock ?? 1}
-                  brand={product.brand}
-                  showAddToCart
-                />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {hydrated && products.length === 0 && (
-          <section className="text-center py-32">
+        {hydrated && !hasProducts && (
+          <section className="py-24 text-center">
             {!storeConfigured ? (
               <>
-                <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-zinc-900 dark:text-white mb-4 font-[family-name:var(--font-heading)]">
-                  Welcome. Let&apos;s build your business.
+                <h2 className="mb-4 font-[family-name:var(--font-heading)] text-3xl font-bold tracking-tight text-zinc-900 dark:text-white sm:text-4xl">
+                  Launch your store
                 </h2>
-                <p className="text-zinc-400 dark:text-zinc-600 text-lg font-medium tracking-wide">
-                  Before you can sell, we need to set up your store&apos;s name and branding.
+                <p className="text-lg font-medium tracking-wide text-zinc-400 dark:text-zinc-600">
+                  Set your store name and branding first, then start adding products.
                 </p>
                 <a
                   href="/setup-wizard"
-                  className="inline-block mt-6 px-8 py-3 rounded-full text-white text-sm font-semibold tracking-wide transition-colors hover:opacity-90"
-                  style={{ backgroundColor: settings.primary_color }}
+                  className="mt-6 inline-flex min-h-[56px] items-center justify-center rounded-full px-8 py-3 text-sm font-semibold tracking-wide text-white"
+                  style={{ backgroundColor: settings.themeColor }}
                 >
-                  Launch My Store
+                  Launch Your Store
                 </a>
               </>
             ) : (
               <>
-                <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-zinc-900 dark:text-white mb-4 font-[family-name:var(--font-heading)]">
-                  Your store is live!
+                <h2 className="mb-4 font-[family-name:var(--font-heading)] text-3xl font-bold tracking-tight text-zinc-900 dark:text-white sm:text-4xl">
+                  Your store is live
                 </h2>
-                <p className="text-zinc-400 dark:text-zinc-600 text-lg font-medium tracking-wide">
+                <p className="text-lg font-medium tracking-wide text-zinc-400 dark:text-zinc-600">
                   Everything is set up. Now let&apos;s add your very first product.
                 </p>
                 <a
                   href="/sell"
-                  className="inline-block mt-6 px-8 py-3 rounded-full text-white text-sm font-semibold tracking-wide transition-colors hover:opacity-90"
-                  style={{ backgroundColor: settings.primary_color }}
+                  className="mt-6 inline-flex min-h-[56px] items-center justify-center rounded-full px-8 py-3 text-sm font-semibold tracking-wide text-white"
+                  style={{ backgroundColor: settings.themeColor }}
                 >
                   Add My First Product
                 </a>
