@@ -66,7 +66,7 @@ export default function SetupWizardPage() {
 
   const handleColorSelect = (color: string) => {
     setWizardData((prev) => ({ ...prev, themeColor: color }));
-    window.setTimeout(() => nextStep(), 700);
+    window.setTimeout(() => nextStep(), 500);
   };
 
   const updateSocial = (platform: string, value: string) => {
