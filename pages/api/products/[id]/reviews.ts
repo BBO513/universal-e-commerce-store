@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { getApprovedReviewsByProductId, getAverageRatingAndCountByProductId } from '../../../lib/db';
+import { getApprovedReviewsByProductId, getAverageRatingAndCountByProductId } from '../../../../lib/db';
 
 export default async function handler(
   req: NextApiRequest,

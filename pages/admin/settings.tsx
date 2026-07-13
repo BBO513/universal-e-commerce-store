@@ -2,7 +2,7 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react';
 import { GetServerSideProps } from 'next';
 import { getSession } from 'next-auth/react';
-import AdminLayout from '../../../components/admin/AdminLayout';
+import AdminLayout from '../../components/admin/AdminLayout';
 import { Theme } from '../../../lib/config';
 
 interface SettingsPageProps {

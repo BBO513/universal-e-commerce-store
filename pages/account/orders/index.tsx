@@ -3,7 +3,7 @@ import { GetServerSideProps } from 'next';
 import { getSession, useSession } from 'next-auth/react';
 import Head from 'next/head';
 import Link from 'next/link';
-import Layout from '../../components/Layout'; // Assuming a general layout component
+import Layout from '../../../components/Layout'; // Assuming a general layout component
 
 interface Order {
   id: number;

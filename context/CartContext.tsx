@@ -58,7 +58,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const { data: session } = useSession();
-  const userId = session?.user?.id ? parseInt(session.user.id as string, 10) : null;
+  const userId = (session?.user as { id?: string | null } | undefined)?.id
+    ? parseInt((session?.user as { id?: string | null } | undefined)?.id as string, 10)
+    : null;
   const { currency } = useCurrency();
   const [exchangeRates, setExchangeRates] = useState({ AUD: 1, USD: 0.67, EUR: 0.61 });
 

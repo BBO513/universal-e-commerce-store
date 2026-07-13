@@ -1,5 +1,5 @@
 import React from 'react';
-import { StarRating } from '@/components/StarRating';
+import StarRating from '@/components/StarRating';
 
 interface Review {
   id: string;

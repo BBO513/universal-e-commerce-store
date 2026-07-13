@@ -2,7 +2,7 @@
 import { GetServerSideProps } from 'next';
 import { getSession } from 'next-auth/react';
 import AdminLayout from '../../../components/admin/AdminLayout';
-import { getOrderById } from '../../../../lib/db';
+import { getOrderById } from '../../../lib/db';
 import { useState } from 'react';
 import ConfirmationModal from '../../../components/admin/ConfirmationModal';
 

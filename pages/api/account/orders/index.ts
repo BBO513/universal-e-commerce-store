@@ -1,7 +1,7 @@
 
 import { NextApiRequest, NextApiResponse } from 'next';
 import { getSession } from 'next-auth/react';
-import { getUserOrders } from '../../../lib/db';
+import { getUserOrders } from '../../../../lib/db';
 
 export default async function handler(
   req: NextApiRequest,

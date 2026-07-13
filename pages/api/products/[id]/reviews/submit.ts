@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { getSession } from 'next-auth/react';
-import { submitReview } from '../../../../lib/db';
+import { submitReview } from '../../../../../lib/db';
 
 export default async function handler(
   req: NextApiRequest,

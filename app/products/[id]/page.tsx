@@ -7,8 +7,8 @@ import Link from 'next/link';
 import { getProductById } from '@/lib/config';
 
 const ProductDetailPage = () => {
-  const params = useParams();
-  const productId = params.id as string;
+  const params = useParams<{ id?: string }>();
+  const productId = params?.id;
   const { addItem } = useCart();
 
   const [product, setProduct] = useState<any>(null);

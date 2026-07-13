@@ -896,6 +896,17 @@ export async function getUserPasswordHash(userId: number) {
   return rows[0]?.password_hash || null;
 }
 
+export async function updateUserPassword(userId: number, passwordHash: string) {
+  const { rows } = await safeQuery(
+    `UPDATE users
+     SET password_hash = $1
+     WHERE id = $2
+     RETURNING id` ,
+    [passwordHash, userId]
+  );
+  return rows[0];
+}
+
 export async function updateDefaultAddress(userId: number, addressId: number) {
   if (demoMode) return null;
   const p = getPool();

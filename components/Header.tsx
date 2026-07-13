@@ -13,6 +13,8 @@ export default function Header() {
   const totalCartItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   const { t } = useTranslation('common');
   const { locale, locales, asPath } = router;
+  const currentLocale = locale ?? 'en';
+  const availableLocales = locales ?? ['en'];
   const { currency, setCurrency } = useCurrency();
   const [isLangDropdownOpen, setIsLangDropdownOpen] = useState(false);
   const [isCurrencyDropdownOpen, setIsCurrencyDropdownOpen] = useState(false);
@@ -80,11 +82,11 @@ export default function Header() {
               onClick={() => setIsLangDropdownOpen(!isLangDropdownOpen)}
               className="px-2 py-1 rounded-md hover:bg-gray-700 transition-colors min-h-[44px] flex items-center"
             >
-              {locale.toUpperCase()}
+              {currentLocale.toUpperCase()}
             </button>
             {isLangDropdownOpen && (
               <div className="absolute right-0 mt-2 w-40 bg-gray-800 rounded-md shadow-lg">
-                {locales.map((loc) => (
+                {availableLocales.map((loc) => (
                   <Link key={loc} href={asPath} locale={loc} className="block px-4 py-2 text-sm text-white hover:bg-gray-700">
                     {loc.toUpperCase()}
                   </Link>

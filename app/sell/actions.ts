@@ -2,7 +2,7 @@
 
 import { createProduct, getAllCategories } from '@/lib/db';
 
-export async function listItem(formData: FormData): Promise<{ success: boolean; error?: string }> {
+export async function listItem(formData: FormData): Promise<{ success: boolean; error?: string; product?: any }> {
   try {
     const photo = formData.get('photo') as string;
     const title = formData.get('title') as string;

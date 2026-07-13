@@ -23,8 +23,9 @@ const PWAInstallPrompt: React.FC = () => {
   const promptRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const hasMsStream = typeof window !== 'undefined' && 'MSStream' in window;
     // Detect iOS
-    setIsIOS(/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream);
+    setIsIOS(/iPad|iPhone|iPod/.test(navigator.userAgent) && !hasMsStream);
     // Detect if running in standalone mode (PWA installed)
     setIsStandalone(window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone);
 

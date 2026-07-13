@@ -4,6 +4,8 @@ import bcrypt from "bcrypt";
 import { NextAuthOptions } from "next-auth";
 import { getUserRole, getUserByEmail } from "./db"; // Import getUserRole and getUserByEmail
 
+export const users: Array<{ id: string; name: string; email: string; password: string }> = [];
+
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({

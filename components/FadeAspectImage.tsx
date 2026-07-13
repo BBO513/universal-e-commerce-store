@@ -17,9 +17,9 @@ export default function FadeAspectImage({
 }: FadeAspectImageProps) {
   const [loaded, setLoaded] = useState(false);
 
-  const handleLoadingComplete = (result: { naturalWidth: number; naturalHeight: number }) => {
+  const handleLoadingComplete = (img: HTMLImageElement) => {
     setLoaded(true);
-    if (onLoadingComplete) onLoadingComplete(result);
+    onLoadingComplete?.(img);
   };
 
   return (

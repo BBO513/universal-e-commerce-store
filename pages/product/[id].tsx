@@ -10,7 +10,7 @@ import { useCart } from '../../context/CartContext';
 import { useCurrency } from '../../context/CurrencyContext';
 import ReviewList from '../../components/reviews/ReviewList';
 import ReviewForm from '../../components/reviews/ReviewForm';
-import { StarRating } from '../../components/StarRating';
+import StarRating from '../../components/StarRating';
 import { FaHeart, FaRegHeart } from 'react-icons/fa';
 
 interface ProductDetailPageProps {

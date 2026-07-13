@@ -4,7 +4,7 @@ import ProductForm from '../../../components/admin/ProductForm';
 import { useRouter } from 'next/router';
 import { GetServerSideProps } from 'next';
 import { getSession } from 'next-auth/react';
-import { getProductById } from '../../../../lib/db';
+import { getProductById } from '../../../lib/db';
 
 interface EditProductPageProps {
   product: any; // Replace 'any' with actual product type

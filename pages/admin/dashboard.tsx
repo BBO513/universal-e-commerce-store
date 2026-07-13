@@ -1,8 +1,8 @@
 
 import { GetServerSideProps } from 'next';
 import { getSession } from 'next-auth/react';
-import AdminLayout from '../../../components/admin/AdminLayout';
-import { getDashboardMetrics, getRevenueByDay, getOrdersByDay } from '../../../lib/db';
+import AdminLayout from '../../components/admin/AdminLayout';
+import { getDashboardMetrics, getRevenueByDay, getOrdersByDay } from '../../lib/db';
 import {
   Chart as ChartJS,
   CategoryScale,
